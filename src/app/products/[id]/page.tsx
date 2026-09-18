@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Product, api, getAgencySlug } from "@/lib/api";
 import { addToCart } from "@/lib/cart";
 import { asStringArray, money } from "@/lib/utils";
+import { ProductSocial } from "@/components/shop/product-social";
 
 export default function ProductPage() {
   const params = useParams<{ id: string }>();
@@ -62,6 +63,7 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+      <ProductSocial productId={product.id} />
     </ShopShell>
   );
 }

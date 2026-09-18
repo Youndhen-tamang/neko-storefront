@@ -1,33 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { ShopShell } from "@/components/shop/shop-shell";
+import { Product, Branding } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Product, api, getAgencySlug } from "@/lib/api";
-import { addToCart } from "@/lib/cart";
 import { asStringArray, money } from "@/lib/utils";
+import { addProductToCart } from "@/components/shop/add-to-cart";
 
-export function ShopHome() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!getAgencySlug()) return;
-    api<{ products: Product[] }>("/api/products/public")
-      .then((data) => setProducts(data.products))
-      .catch((error) => toast.error(error.message))
-      .finally(() => setLoading(false));
-  }, []);
-
+export function AtelierLanding({
+  products,
+  loading,
+  branding,
+}: {
+  products: Product[];
+  loading: boolean;
+  branding: Branding | null;
+}) {
   return (
-    <ShopShell>
+    <div className="mx-auto max-w-6xl px-6 py-12">
       <section className="mb-12 max-w-2xl">
         <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">Catalog</p>
-        <h1 className="mt-3 font-serif text-5xl leading-tight">Objects made to last, ready to ship.</h1>
+        <h1 className="mt-3 font-serif text-5xl leading-tight">
+          {branding?.tagline || "Objects made to last, ready to ship."}
+        </h1>
         <p className="mt-4 max-w-xl text-muted-foreground">
-          Browse live inventory. Stock shown here is read from the store database, not a cached catalog.
+          Browse live inventory from {branding?.brandName || "this store"}. Stock shown here is read
+          from the store database, not a cached catalog.
         </p>
       </section>
       {loading ? (
@@ -58,10 +55,7 @@ export function ShopHome() {
                   <Button
                     className="w-full"
                     disabled={product.stock < 1}
-                    onClick={() => {
-                      addToCart(getAgencySlug(), product);
-                      toast.success("Added to cart");
-                    }}
+                    onClick={() => addProductToCart(product)}
                   >
                     {product.stock < 1 ? "Sold out" : "Add to cart"}
                   </Button>
@@ -71,6 +65,6 @@ export function ShopHome() {
           })}
         </div>
       )}
-    </ShopShell>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Landing } from "@/components/landing/landing";
-import { ShopHome } from "@/components/shop/shop-home";
+import { StoreHome } from "@/components/shop/store-home";
 import { agencySlugFromHost } from "@/lib/tenant";
 
 async function currentSlug() {
@@ -17,7 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+// Bare host shows the platform landing; a tenant subdomain shows that store's templated home.
 export default async function HomePage() {
   const slug = await currentSlug();
-  return slug ? <ShopHome /> : <Landing />;
+  return slug ? <StoreHome /> : <Landing />;
 }

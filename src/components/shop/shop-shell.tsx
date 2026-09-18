@@ -6,6 +6,9 @@ import { Branding, api, getAgencySlug } from "@/lib/api";
 import { cartCount } from "@/lib/cart";
 import { storeUrlForSlug } from "@/lib/tenant";
 import { ChatWidget } from "@/components/chat/chat-widget";
+import { ShopContext } from "@/components/shop/shop-context";
+import { cn } from "@/lib/utils";
+import { LandingTemplateId, normalizeLandingTemplate } from "@/lib/templates";
 
 function hexToHsl(hex: string) {
   const cleaned = hex.replace("#", "");
@@ -35,11 +38,20 @@ function hexToHsl(hex: string) {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
-export function ShopShell({ children }: { children: React.ReactNode }) {
+export function ShopShell({
+  children,
+  flush = false,
+  templateOverride,
+}: {
+  children: React.ReactNode;
+  flush?: boolean;
+  templateOverride?: LandingTemplateId;
+}) {
   const [branding, setBranding] = useState<Branding | null>(null);
   const [count, setCount] = useState(0);
   const [missing, setMissing] = useState(false);
   const [manualSlug, setManualSlug] = useState("");
+  const template = templateOverride || normalizeLandingTemplate(branding?.landingTemplate);
 
   useEffect(() => {
     const current = getAgencySlug();
@@ -93,37 +105,85 @@ export function ShopShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (!branding) {
+    return (
+      <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">
+        Loading store...
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-3">
-            {branding?.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={branding.logoUrl} alt={branding.brandName} className="h-9 w-auto" />
-            ) : (
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-sm text-primary-foreground">
-                {(branding?.brandName || "S").slice(0, 1)}
-              </span>
-            )}
-            <div>
-              <p className="font-serif text-lg leading-none">{branding?.brandName || "Store"}</p>
-              {branding?.tagline && (
-                <p className="mt-1 text-xs text-muted-foreground">{branding.tagline}</p>
+    <ShopContext.Provider
+      value={{
+        branding,
+        cartItemCount: count,
+        template,
+      }}
+    >
+      <div className="min-h-screen">
+        <header
+          className={cn(
+            "sticky top-0 z-20 border-b backdrop-blur",
+            template === "boutique"
+              ? "border-neutral-800 bg-neutral-950/90 text-white"
+              : template === "marketplace"
+                ? "bg-white/95"
+                : "bg-background/90"
+          )}
+        >
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+            <Link href="/" className="flex items-center gap-3">
+              {branding?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={branding.logoUrl} alt={branding.brandName} className="h-9 w-auto" />
+              ) : (
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-sm text-primary-foreground">
+                  {(branding?.brandName || "S").slice(0, 1)}
+                </span>
               )}
-            </div>
-          </Link>
-          <nav className="flex items-center gap-5 text-sm">
-            <Link href="/">Shop</Link>
-            <Link href="/cart">Cart ({count})</Link>
-            <Link href="/admin/login" className="text-muted-foreground">
-              Admin
+              <div>
+                <p
+                  className={cn(
+                    "leading-none",
+                    template === "marketplace" ? "text-base font-semibold" : "font-serif text-lg"
+                  )}
+                >
+                  {branding?.brandName || "Store"}
+                </p>
+                {branding?.tagline && template !== "marketplace" && (
+                  <p
+                    className={cn(
+                      "mt-1 text-xs",
+                      template === "boutique" ? "text-white/60" : "text-muted-foreground"
+                    )}
+                  >
+                    {branding.tagline}
+                  </p>
+                )}
+              </div>
             </Link>
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
-      <ChatWidget brandName={branding?.brandName || "Store"} />
-    </div>
+            <nav
+              className={cn(
+                "flex items-center gap-5 text-sm",
+                template === "marketplace" && "uppercase tracking-wide",
+                template === "boutique" && "text-white/80"
+              )}
+            >
+              <Link href="/">Shop</Link>
+              <Link href="/cart">Cart ({count})</Link>
+              <Link
+                href="/admin/login"
+                className={template === "boutique" ? "text-white/50" : "text-muted-foreground"}
+              >
+                Admin
+              </Link>
+            </nav>
+          </div>
+        </header>
+        <main className={flush ? "" : "mx-auto max-w-6xl px-6 py-10"}>{children}</main>
+        <ChatWidget brandName={branding?.brandName || "Store"} />
+      </div>
+    </ShopContext.Provider>
   );
 }
