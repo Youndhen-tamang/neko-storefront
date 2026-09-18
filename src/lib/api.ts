@@ -2,6 +2,10 @@ import { agencySlugFromHost } from "@/lib/tenant";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
+if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_API_URL) {
+  console.error("NEXT_PUBLIC_API_URL is not set; the storefront is calling http://localhost:4000 in production.");
+}
+
 export type Branding = {
   name: string;
   slug: string;

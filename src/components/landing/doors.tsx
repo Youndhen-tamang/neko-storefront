@@ -3,6 +3,10 @@ import { ArrowUpRight } from "lucide-react";
 
 const SUPER_ADMIN_URL = process.env.NEXT_PUBLIC_SUPER_ADMIN_URL || "http://localhost:3004";
 
+if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_SUPER_ADMIN_URL) {
+  console.error("NEXT_PUBLIC_SUPER_ADMIN_URL is not set; the landing page links to http://localhost:3004 in production.");
+}
+
 export function Doors() {
   return (
     <section id="doors" className="bg-[hsl(var(--ink))] text-[hsl(var(--ink-foreground))]">
