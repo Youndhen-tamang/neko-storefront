@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { Lock, MapPin, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { QuantityStepper } from "@/components/shop/quantity-stepper";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api, getAgencySlug } from "@/lib/api";
-import { CartItem, getCart, saveCart } from "@/lib/cart";
+import { CartItem, getCart, removeFromCart, setCartItemQuantity } from "@/lib/cart";
 import { money } from "@/lib/utils";
 
 export default function CartPage() {
@@ -20,11 +22,26 @@ export default function CartPage() {
   const [shippingAddress, setShippingAddress] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  function refresh() {
     setItems(getCart(getAgencySlug()));
+  }
+
+  useEffect(() => {
+    refresh();
+    window.addEventListener("cart-updated", refresh);
+    return () => window.removeEventListener("cart-updated", refresh);
   }, []);
 
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const total = items.reduce((sum, item) => sum + item.priceCents * item.quantity, 0);
+
+  function changeQuantity(productId: string, quantity: number) {
+    setItems(setCartItemQuantity(getAgencySlug(), productId, quantity));
+  }
+
+  function removeItem(productId: string) {
+    setItems(removeFromCart(getAgencySlug(), productId));
+  }
 
   async function checkout() {
     setLoading(true);
@@ -49,64 +66,171 @@ export default function CartPage() {
 
   return (
     <ShopShell>
-      <h1 className="font-serif text-4xl">Cart</h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Checkout</p>
+          <h1 className="mt-2 font-serif text-4xl">Your bag</h1>
+        </div>
+        <Link href="/" className="text-sm text-muted-foreground underline">
+          Continue shopping
+        </Link>
+      </div>
+
       {items.length === 0 ? (
-        <p className="mt-6 text-muted-foreground">
-          Your cart is empty. <Link href="/">Continue shopping</Link>
-        </p>
+        <div className="mt-10 max-w-lg rounded-2xl border bg-card p-10 text-center">
+          <ShoppingBag className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-4 font-serif text-2xl">Your bag is empty</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Add a piece from the shop, then come back to review quantities and check out.
+          </p>
+          <Button className="mt-6" asChild>
+            <Link href="/">Browse the shop</Link>
+          </Button>
+        </div>
       ) : (
-        <div className="mt-8 grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-4">
-            {items.map((item) => (
-              <div key={item.productId} className="flex items-center justify-between rounded-xl border bg-card p-4">
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {money(item.priceCents)} · qty {item.quantity}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const next = items.filter((row) => row.productId !== item.productId);
-                    setItems(next);
-                    saveCart(getAgencySlug(), next);
-                  }}
-                >
-                  Remove
-                </Button>
+        <div className="mt-8 grid items-start gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.8fr)]">
+          <section aria-label="Cart items" className="min-w-0 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {itemCount} {itemCount === 1 ? "item" : "items"}
+            </p>
+            <ul className="divide-y rounded-2xl border bg-card">
+              {items.map((item) => (
+                <li key={item.productId} className="flex gap-4 p-4 sm:gap-5 sm:p-5">
+                  <Link
+                    href={`/products/${item.productId}`}
+                    className="h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-28 sm:w-24"
+                  >
+                    {item.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.image} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="grid h-full w-full place-items-center text-xs text-muted-foreground">
+                        No image
+                      </span>
+                    )}
+                  </Link>
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <Link href={`/products/${item.productId}`} className="font-medium hover:underline">
+                        {item.name}
+                      </Link>
+                      <p className="mt-1 text-sm text-muted-foreground">{money(item.priceCents)} each</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <QuantityStepper
+                          size="sm"
+                          value={item.quantity}
+                          min={0}
+                          max={item.stock}
+                          onChange={(quantity) => changeQuantity(item.productId, quantity)}
+                        />
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                          onClick={() => removeItem(item.productId)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Remove
+                        </button>
+                      </div>
+                      {item.quantity >= item.stock && (
+                        <p className="mt-2 text-xs text-muted-foreground">Only {item.stock} in stock</p>
+                      )}
+                    </div>
+                    <p className="text-base font-medium tabular-nums sm:text-right">
+                      {money(item.priceCents * item.quantity)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <aside className="lg:sticky lg:top-24">
+            <form
+              className="space-y-6 rounded-2xl border bg-card p-6 shadow-sm"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void checkout();
+              }}
+            >
+              <div>
+                <h2 className="font-serif text-2xl">Order summary</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Review totals, then add shipping details.</p>
               </div>
-            ))}
-          </div>
-          <form
-            className="space-y-4 rounded-2xl border bg-card p-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void checkout();
-            }}
-          >
-            <h2 className="font-serif text-2xl">Checkout</h2>
-            <div className="space-y-2">
-              <Label>Full name</Label>
-              <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Shipping address</Label>
-              <Textarea value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} required />
-            </div>
-            <p className="text-lg font-medium">Total {money(total)}</p>
-            <Button className="w-full" type="submit" disabled={loading}>
-              {loading ? "Redirecting to Stripe..." : "Pay with Stripe"}
-            </Button>
-          </form>
+
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Subtotal</dt>
+                  <dd className="tabular-nums">{money(total)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Shipping</dt>
+                  <dd className="text-muted-foreground">Calculated next</dd>
+                </div>
+                <div className="flex justify-between border-t pt-3 text-base font-medium">
+                  <dt>Total</dt>
+                  <dd className="tabular-nums">{money(total)}</dd>
+                </div>
+              </dl>
+
+              <div className="space-y-4 border-t pt-6">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-medium">Shipping details</h3>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="checkout-name">Full name</Label>
+                  <Input
+                    id="checkout-name"
+                    autoComplete="name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="checkout-email">Email</Label>
+                  <Input
+                    id="checkout-email"
+                    type="email"
+                    autoComplete="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="checkout-phone">Phone</Label>
+                  <Input
+                    id="checkout-phone"
+                    type="tel"
+                    autoComplete="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="checkout-address">Shipping address</Label>
+                  <Textarea
+                    id="checkout-address"
+                    autoComplete="street-address"
+                    rows={3}
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button className="w-full" size="lg" type="submit" disabled={loading}>
+                {loading ? "Redirecting to Stripe..." : `Pay ${money(total)} with Stripe`}
+              </Button>
+              <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                Secure checkout via Stripe. You will confirm payment on the next page.
+              </p>
+            </form>
+          </aside>
         </div>
       )}
     </ShopShell>

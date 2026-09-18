@@ -31,24 +31,49 @@ export function saveCart(slug: string, items: CartItem[]) {
 
 export function addToCart(
   slug: string,
-  product: { id: string; name: string; price_cents: number; images: unknown; stock: number }
+  product: { id: string; name: string; price_cents: number; images: unknown; stock: number },
+  quantity = 1
 ) {
+  if (product.stock < 1) return;
+  const qty = Math.max(1, Math.floor(quantity));
   const items = getCart(slug);
   const existing = items.find((item) => item.productId === product.id);
   const images = asStringArray(product.images);
   if (existing) {
-    existing.quantity = Math.min(existing.quantity + 1, product.stock);
+    existing.quantity = Math.min(existing.quantity + qty, product.stock);
+    existing.stock = product.stock;
+    existing.priceCents = product.price_cents;
+    existing.name = product.name;
+    if (images[0]) existing.image = images[0];
   } else {
     items.push({
       productId: product.id,
       name: product.name,
       priceCents: product.price_cents,
       image: images[0],
-      quantity: 1,
+      quantity: Math.min(qty, product.stock),
       stock: product.stock,
     });
   }
   saveCart(slug, items);
+}
+
+export function setCartItemQuantity(slug: string, productId: string, quantity: number) {
+  const nextQty = Math.floor(quantity);
+  const next = getCart(slug)
+    .map((item) => {
+      if (item.productId !== productId) return item;
+      return { ...item, quantity: Math.min(Math.max(nextQty, 0), item.stock) };
+    })
+    .filter((item) => item.quantity > 0);
+  saveCart(slug, next);
+  return next;
+}
+
+export function removeFromCart(slug: string, productId: string) {
+  const next = getCart(slug).filter((item) => item.productId !== productId);
+  saveCart(slug, next);
+  return next;
 }
 
 export function cartCount(slug: string) {

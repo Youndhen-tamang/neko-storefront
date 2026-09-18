@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { QuantityStepper } from "@/components/shop/quantity-stepper";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { Button } from "@/components/ui/button";
 import { Product, api, getAgencySlug } from "@/lib/api";
@@ -14,8 +15,10 @@ import { ProductSocial } from "@/components/shop/product-social";
 export default function ProductPage() {
   const params = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
+    setQuantity(1);
     api<{ product: Product }>(`/api/products/public/${params.id}`)
       .then((data) => setProduct(data.product))
       .catch((error) => toast.error(error.message));
@@ -46,13 +49,20 @@ export default function ProductPage() {
           <p className="mt-4 text-2xl">{money(product.price_cents)}</p>
           <p className="mt-2 text-sm text-muted-foreground">{product.stock} currently in stock</p>
           <p className="mt-6 max-w-lg leading-7 text-muted-foreground">{product.description}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <QuantityStepper
+              value={quantity}
+              min={1}
+              max={Math.max(product.stock, 1)}
+              disabled={product.stock < 1}
+              onChange={setQuantity}
+            />
             <Button
               size="lg"
               disabled={product.stock < 1}
               onClick={() => {
-                addToCart(getAgencySlug(), product);
-                toast.success("Added to cart");
+                addToCart(getAgencySlug(), product, quantity);
+                toast.success(quantity === 1 ? "Added to cart" : `Added ${quantity} to cart`);
               }}
             >
               Add to cart
