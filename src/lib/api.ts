@@ -95,9 +95,20 @@ export type Order = {
   status: string;
   customer_name: string;
   customer_email: string;
+  customer_phone?: string | null;
+  shipping_address?: string | null;
+  subtotal_cents?: number;
   total_cents: number;
+  currency?: string;
+  email_sent?: boolean;
   created_at: string;
-  items: { name: string; quantity: number; unit_price_cents: number; image_url?: string }[];
+  items: {
+    name: string;
+    quantity: number;
+    unit_price_cents: number;
+    image_url?: string;
+    product_id?: string | null;
+  }[];
 };
 
 const TOKEN_KEY = "admin_token";

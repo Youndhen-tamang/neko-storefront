@@ -60,10 +60,7 @@ export default function ProductPage() {
             <Button
               size="lg"
               disabled={product.stock < 1}
-              onClick={() => {
-                addToCart(getAgencySlug(), product, quantity);
-                toast.success(quantity === 1 ? "Added to cart" : `Added ${quantity} to cart`);
-              }}
+              onClick={() => addToCart(getAgencySlug(), product, quantity)}
             >
               Add to cart
             </Button>

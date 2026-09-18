@@ -45,6 +45,36 @@ const config: Config = {
         sans: ["var(--font-outfit)", "system-ui", "sans-serif"],
         serif: ["var(--font-fraunces)", "Georgia", "serif"],
       },
+      keyframes: {
+        "success-fade-up": {
+          from: { opacity: "0", transform: "translateY(18px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        "success-pop": {
+          "0%": { opacity: "0", transform: "scale(0.55)" },
+          "70%": { opacity: "1", transform: "scale(1.08)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        "success-ring": {
+          from: { transform: "scale(0.85)", opacity: "0.45" },
+          to: { transform: "scale(1.55)", opacity: "0" },
+        },
+        "success-draw": {
+          to: { strokeDashoffset: "0" },
+        },
+        "success-shimmer": {
+          from: { backgroundPosition: "200% 0" },
+          to: { backgroundPosition: "-200% 0" },
+        },
+      },
+      animation: {
+        "success-fade-up": "success-fade-up 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "success-pop": "success-pop 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "success-ring": "success-ring 1.4s ease-out infinite",
+        "success-draw-circle": "success-draw 600ms ease forwards",
+        "success-draw-check": "success-draw 450ms ease 320ms forwards",
+        "success-shimmer": "success-shimmer 1.4s linear infinite",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

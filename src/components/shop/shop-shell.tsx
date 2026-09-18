@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Branding, api, getAgencySlug } from "@/lib/api";
-import { cartCount } from "@/lib/cart";
+import { cartCount, openCartDrawer } from "@/lib/cart";
 import { storeUrlForSlug } from "@/lib/tenant";
+import { CartDrawer } from "@/components/shop/cart-drawer";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { ShopContext } from "@/components/shop/shop-context";
 import { cn } from "@/lib/utils";
@@ -172,7 +173,9 @@ export function ShopShell({
             >
               <Link href="/">Shop</Link>
               <Link href="/try-on">Try on</Link>
-              <Link href="/cart">Cart ({count})</Link>
+              <button type="button" onClick={() => openCartDrawer()}>
+                Cart ({count})
+              </button>
               <Link
                 href="/admin/login"
                 className={template === "boutique" ? "text-white/50" : "text-muted-foreground"}
@@ -183,6 +186,7 @@ export function ShopShell({
           </div>
         </header>
         <main className={flush ? "" : "mx-auto max-w-6xl px-6 py-10"}>{children}</main>
+        <CartDrawer />
         <ChatWidget brandName={branding?.brandName || "Store"} />
       </div>
     </ShopContext.Provider>

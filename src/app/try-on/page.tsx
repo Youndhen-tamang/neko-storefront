@@ -244,10 +244,7 @@ function TryOnPageInner() {
               variant="outline"
               className="w-full"
               disabled={product.stock < 1}
-              onClick={() => {
-                addToCart(getAgencySlug(), product);
-                toast.success("Added to cart");
-              }}
+              onClick={() => addToCart(getAgencySlug(), product)}
             >
               {product.stock < 1 ? "Sold out" : `Add to cart · ${money(product.price_cents)}`}
             </Button>

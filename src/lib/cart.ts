@@ -24,9 +24,16 @@ export function getCart(slug: string): CartItem[] {
   }
 }
 
+export const CART_OPEN_EVENT = "cart-open";
+
 export function saveCart(slug: string, items: CartItem[]) {
   localStorage.setItem(key(slug), JSON.stringify(items));
   window.dispatchEvent(new Event("cart-updated"));
+}
+
+export function openCartDrawer() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CART_OPEN_EVENT));
 }
 
 export function addToCart(
@@ -56,6 +63,7 @@ export function addToCart(
     });
   }
   saveCart(slug, items);
+  openCartDrawer();
 }
 
 export function setCartItemQuantity(slug: string, productId: string, quantity: number) {
