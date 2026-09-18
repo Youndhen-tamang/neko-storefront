@@ -12,6 +12,8 @@ type Stats = {
   orderCount: number;
   revenueCents: number;
   unreadNotifications: number;
+  likeCount?: number;
+  commentCount?: number;
   lowStock: { id: string; name: string; stock: number }[];
   recentOrders: { id: string; invoice_number: string; status: string; total_cents: number }[];
 };
@@ -29,16 +31,18 @@ export default function AdminDashboardPage() {
     <AdminShell>
       <div className="flex items-end justify-between gap-3">
         <h1 className="font-serif text-4xl">Dashboard</h1>
-        <Link href="/admin/analytics" className="text-sm text-primary">
-          Open analytics
+        <Link href="/admin/comments" className="text-sm text-primary">
+          Open comments
         </Link>
       </div>
-      <div className="mt-8 grid gap-4 md:grid-cols-4">
+      <div className="mt-8 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         {[
           ["Products", stats?.productCount ?? 0],
           ["Orders", stats?.orderCount ?? 0],
           ["Revenue", money(stats?.revenueCents ?? 0)],
           ["Unread", stats?.unreadNotifications ?? 0],
+          ["Likes", stats?.likeCount ?? 0],
+          ["Comments", stats?.commentCount ?? 0],
         ].map(([label, value]) => (
           <Card key={String(label)}>
             <CardHeader>

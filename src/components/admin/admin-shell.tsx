@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Bell, LayoutDashboard, LogOut, Package, Settings, ShoppingBag, TriangleAlert } from "lucide-react";
+import { BarChart3, Bell, Heart, LayoutDashboard, LogOut, Package, Settings, ShoppingBag, TriangleAlert } from "lucide-react";
 import { clearAdminToken, getAdminToken } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
@@ -11,6 +11,7 @@ const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/comments", label: "Comments", icon: Heart },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/alerts", label: "Alerts", icon: TriangleAlert },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
