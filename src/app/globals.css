@@ -34,3 +34,122 @@ body {
 .brand-dot {
   background: hsl(var(--primary));
 }
+
+/* Landing-only tokens: deep ink-green for the closing section. */
+:root {
+  --ink: 152 40% 10%;
+  --ink-foreground: 40 33% 96%;
+}
+
+/* Browser surfaces carry the palette too. */
+::selection {
+  background: hsl(var(--primary) / 0.22);
+  color: hsl(var(--foreground));
+}
+input,
+textarea {
+  caret-color: hsl(var(--primary));
+}
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+a {
+  text-underline-offset: 0.2em;
+}
+@supports (scrollbar-color: auto) {
+  html {
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+}
+
+.landing .link-quiet {
+  color: hsl(var(--muted-foreground));
+  transition: color 150ms ease-out;
+}
+.landing .link-quiet:hover {
+  color: hsl(var(--foreground));
+}
+
+/* Hero panel ground: a woven hairline grid in the primary tone, so the panel is a material, not a flat fill. */
+.hero-weave {
+  background-image:
+    linear-gradient(hsl(var(--primary-foreground) / 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--primary-foreground) / 0.16) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 72%);
+}
+
+/* The preview leans toward the pointer; values are set from JS, defaults keep it flat. */
+.preview-frame {
+  --rx: 0deg;
+  --ry: 0deg;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+}
+
+/* Architecture strip: connectors draw once when the section scrolls into view. */
+.arch .arch-line {
+  transform-origin: top;
+  transform: scaleY(0);
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (min-width: 1024px) {
+  .arch .arch-line {
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+}
+.arch .arch-spine {
+  transform-origin: top;
+  transform: scaleY(0);
+  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1) 350ms;
+}
+.arch-drawn .arch-spine {
+  transform: none;
+}
+.arch .arch-dot {
+  opacity: 0;
+  transition: opacity 300ms ease-out 600ms;
+}
+.arch .arch-store {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 500ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.arch-drawn .arch-line {
+  transform: none;
+}
+.arch-drawn .arch-dot {
+  opacity: 1;
+}
+.arch-drawn .arch-store {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arch .arch-line,
+  .arch .arch-spine,
+  .arch .arch-dot,
+  .arch .arch-store,
+  .preview-frame {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Doors: the whole row is the link. */
+.door:hover h3,
+.door:focus-visible h3 {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+.door:focus-visible {
+  box-shadow: inset 0 0 0 2px hsl(var(--ink-foreground));
+  border-radius: 0.5rem;
+}

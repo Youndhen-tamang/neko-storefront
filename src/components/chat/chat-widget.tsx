@@ -1,15 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, RotateCcw, X } from "lucide-react";
 import { api, getAgencySlug } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+type ProductLink = { id: string; name: string; url: string; tryOnUrl: string };
+
 type Message = {
   role: "user" | "assistant";
   content: string;
   checkoutUrl?: string;
+  products?: ProductLink[];
 };
 
 type ChatResponse = {
@@ -17,7 +21,17 @@ type ChatResponse = {
   checkoutUrl?: string;
   checkoutSessionId?: string;
   order?: { invoice_number: string };
+  products?: ProductLink[];
 };
+
+function pathOf(url: string) {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return url;
+  }
+}
 
 const URL_RE = /https?:\/\/[^\s]+/gi;
 const STRIPE_URL_RE = /https?:\/\/(?:checkout\.stripe\.com|buy\.stripe\.com)[^\s<]+/i;
@@ -201,6 +215,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
           role: "assistant",
           content: data.answer,
           checkoutUrl: data.checkoutUrl,
+          products: data.products?.length ? data.products : undefined,
         },
       ]);
     } catch (error) {
@@ -254,6 +269,24 @@ export function ChatWidget({ brandName }: { brandName: string }) {
                   }
                 >
                   {text && <p className="whitespace-pre-wrap break-words">{text}</p>}
+                  {message.products?.length ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {message.products.map((product) => (
+                        <span key={product.id} className="inline-flex overflow-hidden rounded-full border bg-background text-xs">
+                          <Link href={pathOf(product.url)} className="px-2.5 py-1 hover:bg-muted">
+                            {product.name}
+                          </Link>
+                          <Link
+                            href={pathOf(product.tryOnUrl)}
+                            className="border-l px-2.5 py-1 text-muted-foreground hover:bg-muted"
+                            title="See it on you"
+                          >
+                            Try on
+                          </Link>
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                   {checkoutUrl && (
                     <a
                       href={checkoutUrl}
