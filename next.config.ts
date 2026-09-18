@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: __dirname,
   allowedDevOrigins: ["*.localhost", "localhost", "127.0.0.1"],
   eslint: { ignoreDuringBuilds: true },
   images: {

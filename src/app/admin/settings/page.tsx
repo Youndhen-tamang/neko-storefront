@@ -9,6 +9,139 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 
+type WhatsAppSettings = {
+  enabled: boolean;
+  phoneNumberId: string;
+  displayPhone: string;
+  hasAccessToken: boolean;
+  accessTokenLast4: string | null;
+  webhookUrl: string;
+  verifyTokenConfigured: boolean;
+};
+
+function WhatsAppCard() {
+  const [wa, setWa] = useState<WhatsAppSettings | null>(null);
+  const [accessToken, setAccessToken] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    api<{ whatsapp: WhatsAppSettings }>("/api/settings/whatsapp", { auth: true })
+      .then((data) => setWa(data.whatsapp))
+      .catch((error) => toast.error(error.message));
+  }, []);
+
+  if (!wa) return null;
+
+  return (
+    <form
+      className="mt-8 max-w-xl space-y-4 rounded-2xl border bg-card p-6"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+          const data = await api<{ whatsapp: WhatsAppSettings }>("/api/settings/whatsapp", {
+            method: "PUT",
+            auth: true,
+            body: JSON.stringify({
+              enabled: wa.enabled,
+              phoneNumberId: wa.phoneNumberId,
+              displayPhone: wa.displayPhone,
+              ...(accessToken.trim() ? { accessToken: accessToken.trim() } : {}),
+            }),
+          });
+          setWa(data.whatsapp);
+          setAccessToken("");
+          toast.success("WhatsApp settings saved");
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Could not save");
+        } finally {
+          setSaving(false);
+        }
+      }}
+    >
+      <div>
+        <h2 className="font-serif text-2xl">WhatsApp assistant</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Customers who message your WhatsApp number get the same assistant as the storefront chat: product help,
+          photo matching, try-on links, and payment links.
+        </p>
+      </div>
+      <label className="flex items-center gap-3 text-sm">
+        <input
+          type="checkbox"
+          className="h-4 w-4"
+          checked={wa.enabled}
+          onChange={(e) => setWa({ ...wa, enabled: e.target.checked })}
+        />
+        Enable WhatsApp auto-replies
+      </label>
+      <div className="space-y-2">
+        <Label>Phone number ID</Label>
+        <Input
+          value={wa.phoneNumberId}
+          placeholder="From Meta → WhatsApp → API setup"
+          onChange={(e) => setWa({ ...wa, phoneNumberId: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Access token</Label>
+        <Input
+          type="password"
+          autoComplete="off"
+          value={accessToken}
+          placeholder={wa.hasAccessToken ? `Saved (…${wa.accessTokenLast4 ?? ""}). Paste a new one to replace.` : "Permanent system-user token"}
+          onChange={(e) => setAccessToken(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Display phone (optional)</Label>
+        <Input
+          value={wa.displayPhone}
+          placeholder="+1 555 000 0000"
+          onChange={(e) => setWa({ ...wa, displayPhone: e.target.value })}
+        />
+      </div>
+      <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+        <p>
+          Webhook callback URL: <code className="select-all">{wa.webhookUrl}</code>
+        </p>
+        <p className="mt-1">
+          {wa.verifyTokenConfigured
+            ? "Verify token is set on the platform. Ask your platform admin for it when configuring Meta."
+            : "The platform has not set WHATSAPP_VERIFY_TOKEN yet; webhook verification will fail until it does."}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <Button type="submit" disabled={saving}>
+          {saving ? "Saving…" : "Save WhatsApp"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={testing || !wa.hasAccessToken}
+          onClick={async () => {
+            setTesting(true);
+            try {
+              const data = await api<{ displayPhoneNumber: string | null; verifiedName: string | null }>(
+                "/api/settings/whatsapp/test",
+                { method: "POST", auth: true }
+              );
+              toast.success(`Connected: ${data.verifiedName ?? "unknown"} (${data.displayPhoneNumber ?? "no number"})`);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Connection test failed");
+            } finally {
+              setTesting(false);
+            }
+          }}
+        >
+          {testing ? "Testing…" : "Test connection"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 type Settings = {
   brand_name: string;
   tagline: string | null;
@@ -128,6 +261,7 @@ export default function SettingsPage() {
         </div>
         <Button type="submit">Save branding</Button>
       </form>
+      <WhatsAppCard />
     </AdminShell>
   );
 }
