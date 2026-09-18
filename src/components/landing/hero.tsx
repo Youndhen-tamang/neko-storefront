@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { SplineSlot } from "@/components/landing/spline-slot";
 import { StorePreview } from "@/components/landing/store-preview";
 import { slugify } from "@/lib/slug";
 import { storeUrlForSlug } from "@/lib/tenant";
@@ -14,8 +13,6 @@ const COLORS = [
   { name: "Terracotta", value: "#b3492a" },
   { name: "Charcoal", value: "#2b2b2b" },
 ];
-
-const SPLINE_SCENE = process.env.NEXT_PUBLIC_SPLINE_SCENE;
 
 export function Hero() {
   const [name, setName] = useState("Lumen");
@@ -97,8 +94,7 @@ export function Hero() {
 
       <div className="lg:col-span-7">
         <div className="hero-panel relative isolate flex min-h-[420px] items-center justify-center overflow-hidden rounded-2xl bg-primary p-5 sm:p-10 lg:min-h-[560px]">
-          <SplineSlot scene={SPLINE_SCENE} className="absolute inset-0 -z-10" />
-          {!SPLINE_SCENE && <div className="hero-weave absolute inset-0 -z-10" aria-hidden="true" />}
+          <div className="hero-weave absolute inset-0 -z-10" aria-hidden="true" />
           <div className="w-full max-w-[520px] [perspective:1200px]">
             <StorePreview brandName={name} slug={slug} color={color} />
           </div>
