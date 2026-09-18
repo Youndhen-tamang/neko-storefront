@@ -131,22 +131,37 @@ function TryOnPageInner() {
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-2xl bg-muted">
-            {session?.resultUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={session.resultUrl} alt="Your try-on" className="w-full object-cover" />
-            ) : previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt="Your photo" className="w-full object-cover" />
-            ) : productImages[0] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={productImages[0]} alt={product?.name || "Product"} className="w-full object-cover" />
-            ) : (
-              <div className="grid aspect-[3/4] place-items-center px-6 text-center text-sm text-muted-foreground">
-                Choose a product and upload a photo to see yourself in it.
-              </div>
-            )}
-          </div>
+          {session?.resultUrl && previewUrl ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <figure className="overflow-hidden rounded-2xl bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrl} alt="Your photo" className="w-full object-cover" />
+                <figcaption className="px-3 py-2 text-xs text-muted-foreground">Your photo</figcaption>
+              </figure>
+              <figure className="overflow-hidden rounded-2xl bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={session.resultUrl} alt="Your try-on" className="w-full object-cover" />
+                <figcaption className="px-3 py-2 text-xs text-muted-foreground">In this piece</figcaption>
+              </figure>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl bg-muted">
+              {session?.resultUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={session.resultUrl} alt="Your try-on" className="w-full object-cover" />
+              ) : previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl} alt="Your photo" className="w-full object-cover" />
+              ) : productImages[0] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={productImages[0]} alt={product?.name || "Product"} className="w-full object-cover" />
+              ) : (
+                <div className="grid aspect-[3/4] place-items-center px-6 text-center text-sm text-muted-foreground">
+                  Choose a product and upload a photo to see yourself in it.
+                </div>
+              )}
+            </div>
+          )}
           {session?.resultUrl && (
             <p className="text-sm text-muted-foreground">
               Suggested size for this height and weight:{" "}
