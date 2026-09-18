@@ -50,7 +50,7 @@ export default function ProductsPage() {
           <p className="mt-1 text-sm text-muted-foreground">Edit catalog copy, pricing, stock, and visibility.</p>
         </div>
         <Button asChild>
-          <Link href="/admin/products/new">Add from image</Link>
+          <Link href="/admin/products/new">Add product</Link>
         </Button>
       </div>
       <form
