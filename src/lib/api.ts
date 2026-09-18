@@ -9,6 +9,7 @@ export type Branding = {
   logoUrl: string | null;
   primaryColor: string;
   tagline: string | null;
+  landingTemplate: string;
   email: string | null;
   phone: string | null;
   address: string | null;

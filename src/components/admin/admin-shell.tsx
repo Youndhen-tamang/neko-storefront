@@ -14,7 +14,7 @@ const links = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/alerts", label: "Alerts", icon: TriangleAlert },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
-  { href: "/admin/settings", label: "Branding", icon: Settings },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 function isActive(pathname: string, href: string) {
