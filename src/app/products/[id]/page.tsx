@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -45,17 +46,23 @@ export default function ProductPage() {
           <p className="mt-4 text-2xl">{money(product.price_cents)}</p>
           <p className="mt-2 text-sm text-muted-foreground">{product.stock} currently in stock</p>
           <p className="mt-6 max-w-lg leading-7 text-muted-foreground">{product.description}</p>
-          <Button
-            className="mt-8"
-            size="lg"
-            disabled={product.stock < 1}
-            onClick={() => {
-              addToCart(getAgencySlug(), product);
-              toast.success("Added to cart");
-            }}
-          >
-            Add to cart
-          </Button>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button
+              size="lg"
+              disabled={product.stock < 1}
+              onClick={() => {
+                addToCart(getAgencySlug(), product);
+                toast.success("Added to cart");
+              }}
+            >
+              Add to cart
+            </Button>
+            {images.length > 0 && (
+              <Button size="lg" variant="outline" asChild>
+                <Link href={`/try-on?product=${product.id}`}>Try on you</Link>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       <ProductSocial productId={product.id} />

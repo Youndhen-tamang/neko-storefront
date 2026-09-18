@@ -49,6 +49,13 @@ export type ProductComment = {
   replies: ProductComment[];
 };
 
+export type TryOnSession = {
+  id: string;
+  resultUrl: string;
+  sizeHint: string;
+  product: Pick<Product, "id" | "name" | "price_cents" | "images" | "stock">;
+};
+
 export type ProductEngagement = {
   likeCount: number;
   commentCount: number;

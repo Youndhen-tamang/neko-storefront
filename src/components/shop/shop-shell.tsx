@@ -171,6 +171,7 @@ export function ShopShell({
               )}
             >
               <Link href="/">Shop</Link>
+              <Link href="/try-on">Try on</Link>
               <Link href="/cart">Cart ({count})</Link>
               <Link
                 href="/admin/login"
