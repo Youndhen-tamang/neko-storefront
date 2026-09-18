@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +27,12 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminShell>
-      <h1 className="font-serif text-4xl">Dashboard</h1>
+      <div className="flex items-end justify-between gap-3">
+        <h1 className="font-serif text-4xl">Dashboard</h1>
+        <Link href="/admin/analytics" className="text-sm text-primary">
+          Open analytics
+        </Link>
+      </div>
       <div className="mt-8 grid gap-4 md:grid-cols-4">
         {[
           ["Products", stats?.productCount ?? 0],

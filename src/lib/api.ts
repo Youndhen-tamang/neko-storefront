@@ -16,6 +16,9 @@ export type Branding = {
 
 export type Product = {
   id: string;
+  agency_id?: string;
+  agency_name?: string;
+  agency_slug?: string;
   name: string;
   description: string | null;
   category: string | null;
@@ -23,7 +26,31 @@ export type Product = {
   images: string[] | string;
   price_cents: number;
   stock: number;
+  low_stock_threshold?: number;
   status: "draft" | "published";
+};
+
+export type Analytics = {
+  range: { from: string; to: string };
+  summary: {
+    orderCount: number;
+    paidOrderCount: number;
+    revenueCents: number;
+    unitsSold: number;
+    avgOrderCents: number;
+  };
+  inventory: {
+    total: number;
+    published: number;
+    draft: number;
+    lowStock: number;
+    categories: string[];
+  };
+  revenueByDay: { date: string; orderCount: number; revenueCents: number }[];
+  ordersByStatus: { status: string; count: number; revenueCents: number }[];
+  topProducts: { productId: string | null; name: string; quantity: number; revenueCents: number }[];
+  byCategory: { category: string; quantity: number; revenueCents: number }[];
+  byAgency: { agencyId: string; name: string; slug: string; orderCount: number; revenueCents: number }[];
 };
 
 export type Order = {

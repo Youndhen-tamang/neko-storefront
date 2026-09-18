@@ -2,19 +2,25 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LayoutDashboard, LogOut, Package, Settings, ShoppingBag, TriangleAlert } from "lucide-react";
+import { BarChart3, Bell, LayoutDashboard, LogOut, Package, Settings, ShoppingBag, TriangleAlert } from "lucide-react";
 import { clearAdminToken, getAdminToken } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/alerts", label: "Alerts", icon: TriangleAlert },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/settings", label: "Branding", icon: Settings },
 ];
+
+function isActive(pathname: string, href: string) {
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,7 +44,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               href={link.href}
               className={cn(
                 "flex items-center gap-2 rounded-md px-3 py-2 text-sm",
-                pathname === link.href ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                isActive(pathname, link.href) ? "bg-primary text-primary-foreground" : "hover:bg-muted"
               )}
             >
               <link.icon className="h-4 w-4" />
