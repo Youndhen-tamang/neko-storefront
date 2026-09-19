@@ -65,12 +65,16 @@ function pathOf(url: string) {
 const URL_RE = /https?:\/\/[^\s]+/gi;
 const STRIPE_URL_RE = /https?:\/\/(?:checkout\.stripe\.com|buy\.stripe\.com)[^\s<]+/i;
 const VOICE_KEY = "store_chat_voice";
+const IDLE_OPT_OUT_KEY = "chat_idle_opt_out";
+const IDLE_MS = 10_000;
+const LISTEN_SILENCE_MS = 10_000;
 
 function storageKeys(slug: string) {
   return {
     messages: `chat_messages_${slug}`,
     checkout: `chat_checkout_session_${slug}`,
     welcome: `a11y_welcome_${slug}`,
+    idleOptOut: `chat_idle_opt_out_${slug}`,
   };
 }
 
@@ -149,8 +153,12 @@ export function ChatWidget({ brandName }: { brandName: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesRef = useRef(messages);
   const voiceOnRef = useRef(voiceOn);
+  const openRef = useRef(open);
+  const showWelcomeRef = useRef(showWelcome);
   messagesRef.current = messages;
   voiceOnRef.current = voiceOn;
+  openRef.current = open;
+  showWelcomeRef.current = showWelcome;
 
   function scrollToLatest() {
     const list = listRef.current;
@@ -162,6 +170,28 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     localStorage.setItem("a11y_welcome", "done");
     if (slug) localStorage.setItem(keys.welcome, "done");
     setShowWelcome(false);
+  }
+
+  function idleOptedOut() {
+    try {
+      return (
+        localStorage.getItem(IDLE_OPT_OUT_KEY) === "1" ||
+        Boolean(slug && localStorage.getItem(keys.idleOptOut) === "1")
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function dontAskAgain() {
+    try {
+      localStorage.setItem(IDLE_OPT_OUT_KEY, "1");
+      if (slug) localStorage.setItem(keys.idleOptOut, "1");
+    } catch {
+      // private mode
+    }
+    markWelcomeDone();
+    stopSpeaking();
   }
 
   async function actOnBehalf(note: string) {
@@ -234,13 +264,51 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("from") === "chat") return;
-    if (params.get("a11y") === "1") {
-      setShowWelcome(true);
-      return;
+    if (params.get("a11y") === "1") setShowWelcome(true);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (pathname.startsWith("/admin") || pathname.startsWith("/checkout/success")) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("from") === "chat" || params.get("a11y") === "1") return;
+    if (idleOptedOut()) return;
+
+    let timer: number | undefined;
+    const events = ["pointerdown", "keydown", "mousemove", "scroll", "touchstart", "wheel"] as const;
+
+    function blocked() {
+      return document.hidden || openRef.current || showWelcomeRef.current || idleOptedOut();
     }
-    const welcomeKey = slug ? keys.welcome : "a11y_welcome";
-    if (localStorage.getItem(welcomeKey) !== "done") setShowWelcome(true);
-  }, [keys.welcome, pathname, slug]);
+
+    function armIdle() {
+      window.clearTimeout(timer);
+      if (blocked()) return;
+      timer = window.setTimeout(() => {
+        if (blocked()) return;
+        setShowWelcome(true);
+      }, IDLE_MS);
+    }
+
+    function onVisibility() {
+      if (document.hidden) {
+        window.clearTimeout(timer);
+        return;
+      }
+      armIdle();
+    }
+
+    armIdle();
+    events.forEach((event) => window.addEventListener(event, armIdle, { capture: true, passive: true }));
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach((event) => window.removeEventListener(event, armIdle, { capture: true }));
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, keys.idleOptOut, open, pathname, showWelcome, slug]);
 
   useEffect(() => {
     if (!showWelcome) return;
@@ -395,6 +463,16 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     if (allowSpeak) void speak(text);
   }
 
+  function stopMicrophone(note?: string) {
+    listenGen.current += 1;
+    cancelListening();
+    setListening(false);
+    voiceOnRef.current = false;
+    setVoiceOn(false);
+    localStorage.setItem(VOICE_KEY, "off");
+    if (note) setLiveText(note);
+  }
+
   async function speakThenHear(text: string) {
     if (!speechSupported() || !text.trim()) return;
     const gen = ++listenGen.current;
@@ -402,26 +480,15 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     setLiveText("Speaking your reply.");
     await speak(text);
     if (gen !== listenGen.current) return;
-    let heard: string | null = null;
-    while (!heard && gen === listenGen.current) {
-      setListening(true);
-      setLiveText("I'm listening. Please speak.");
-      heard = await listenForSpeech({
-        idleMs: 20000,
-        pauseMs: 1800,
-        onPartial: (value) => {
-          if (gen === listenGen.current) setInput(value);
-        },
-      });
-      if (gen !== listenGen.current) return;
-      const failure = listenFailure();
-      if (!heard && (failure === "not-allowed" || failure === "service-not-allowed" || failure === "audio-capture")) {
-        const denied = "Please allow the microphone, then tap the microphone button and speak.";
-        setLiveText(denied);
-        await speak(denied);
-        break;
-      }
-    }
+    setListening(true);
+    setLiveText("I'm listening. Please speak. I'll turn the microphone off if you stay quiet.");
+    const heard = await listenForSpeech({
+      idleMs: LISTEN_SILENCE_MS,
+      pauseMs: 1800,
+      onPartial: (value) => {
+        if (gen === listenGen.current) setInput(value);
+      },
+    });
     if (gen !== listenGen.current) return;
     setListening(false);
     if (heard) {
@@ -429,7 +496,16 @@ export function ChatWidget({ brandName }: { brandName: string }) {
       setVoiceOn(true);
       localStorage.setItem(VOICE_KEY, "on");
       await send(heard);
+      return;
     }
+    const failure = listenFailure();
+    if (failure === "not-allowed" || failure === "service-not-allowed" || failure === "audio-capture") {
+      const denied = "Please allow the microphone, then tap the microphone button and speak.";
+      setLiveText(denied);
+      await speak(denied);
+      return;
+    }
+    stopMicrophone("Microphone off. You can type or tap the microphone when you want to talk.");
   }
 
   async function acceptWelcome() {
@@ -446,7 +522,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
   }
 
   function dismissWelcome() {
-    markWelcomeDone();
+    setShowWelcome(false);
     stopSpeaking();
   }
 
@@ -611,7 +687,12 @@ export function ChatWidget({ brandName }: { brandName: string }) {
         {liveText}
       </div>
       {showWelcome && (
-        <A11yWelcome brandName={brandName} onAccept={() => void acceptWelcome()} onDismiss={dismissWelcome} />
+        <A11yWelcome
+          brandName={brandName}
+          onAccept={() => void acceptWelcome()}
+          onDismiss={dismissWelcome}
+          onDontAskAgain={dontAskAgain}
+        />
       )}
       <div className="fixed bottom-5 right-5 z-40">
       {open && (
@@ -760,7 +841,11 @@ export function ChatWidget({ brandName }: { brandName: string }) {
               );
             })}
             {loading && <p className="text-xs text-muted-foreground">Answering your question...</p>}
-            {listening && <p className="text-xs text-muted-foreground">Listening… please speak now.</p>}
+            {listening && (
+              <p className="text-xs text-muted-foreground">
+                Listening… I&apos;ll turn the mic off if you don&apos;t speak for 10 seconds.
+              </p>
+            )}
           </div>
           <form
             className="space-y-2 border-t p-3"
