@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
               <Input
                 value={agencySlug}
                 onChange={(e) => setSlug(e.target.value)}
-                placeholder="lumen"
+                placeholder="lumina"
                 required
               />
             </div>

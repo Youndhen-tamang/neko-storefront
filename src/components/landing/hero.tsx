@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { StorePreview } from "@/components/landing/store-preview";
 import { slugify } from "@/lib/slug";
-import { storeUrlForSlug } from "@/lib/tenant";
+import { publicStoreHost, storeUrlForSlug } from "@/lib/tenant";
 
 const COLORS = [
+  { name: "Lumina rose", value: "#7A3E49" },
   { name: "Forest", value: "#1f6b4a" },
   { name: "Ink blue", value: "#1e3a8a" },
   { name: "Plum", value: "#6b2153" },
@@ -15,24 +16,29 @@ const COLORS = [
 ];
 
 export function Hero() {
-  const [name, setName] = useState("Lumen");
+  const [name, setName] = useState("Lumina");
   const [color, setColor] = useState(COLORS[0].value);
   const slug = useMemo(() => slugify(name), [name]);
   const target = slug ? storeUrlForSlug(slug) : "";
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-10 px-6 pb-16 pt-10 lg:grid-cols-12 lg:gap-8 lg:pb-24 lg:pt-16">
+    <section
+      id="preview"
+      className="mx-auto grid max-w-7xl gap-10 px-6 pb-16 pt-10 lg:grid-cols-12 lg:gap-8 lg:pb-24 lg:pt-16"
+    >
       <div className="flex flex-col justify-center lg:col-span-5">
         <h1 className="text-balance font-serif text-[2.75rem] leading-[1.02] tracking-[-0.02em] sm:text-6xl lg:text-[4.5rem]">
-          Every store gets its own front door.
+          VocaCommerce
         </h1>
-        <p className="mt-6 max-w-[38ch] text-lg leading-relaxed text-muted-foreground">
-          Neko runs one backend for many shops. Each shop lives on its own subdomain, with its own
-          catalog, checkout, admin and assistant. Name one to see it take shape.
+        <p className="mt-4 max-w-[22ch] text-balance font-serif text-2xl leading-snug tracking-[-0.01em] sm:text-3xl">
+          Accessible B2B commerce for everyone.
+        </p>
+        <p className="mt-6 max-w-[40ch] text-lg leading-relaxed text-muted-foreground">
+          A multi-tenant platform where anyone can create an accessible e-commerce store, and
+          customers can interact with those stores through voice. Name a shop to see it take shape.
         </p>
 
         <form
-          id="open"
           className="mt-10"
           onSubmit={(e) => {
             e.preventDefault();
@@ -50,7 +56,7 @@ export function Hero() {
               maxLength={40}
               autoComplete="off"
               spellCheck={false}
-              placeholder="Lumen"
+              placeholder="Lumina"
               className="h-full min-w-0 flex-1 bg-transparent font-serif text-xl outline-none placeholder:text-muted-foreground"
             />
             <button
@@ -62,7 +68,7 @@ export function Hero() {
             </button>
           </div>
           <p className="mt-2 min-h-5 text-sm tabular-nums text-muted-foreground" aria-live="polite">
-            {slug ? `Opens ${slug}.localhost:3000` : "Type a name to get a subdomain"}
+            {slug ? `Opens ${publicStoreHost(slug)}` : "Type a name to get a subdomain"}
           </p>
 
           <fieldset className="mt-6">

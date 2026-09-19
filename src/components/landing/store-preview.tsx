@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Lock, ShoppingBag } from "lucide-react";
+import { Lock, MessageCircle, Mic, RotateCcw, ShoppingBag, Volume2, X } from "lucide-react";
+import { publicStoreHost } from "@/lib/tenant";
 
 type Sample = { name: string; price: string; stock: string; art: React.ReactNode };
 
-const SAMPLES: Sample[] = [
+const GENERIC_SAMPLES: Sample[] = [
   {
     name: "Ash stool",
     price: "NPR 180",
@@ -44,6 +45,46 @@ const SAMPLES: Sample[] = [
   },
 ];
 
+const LUMINA_SAMPLES: Sample[] = [
+  {
+    name: "Little Black Dress",
+    price: "NPR 188",
+    stock: "Sold out",
+    art: (
+      <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M28 14 C32 22, 48 22, 52 14" />
+        <path d="M28 14 L24 26 L32 30 L32 70 H48 L48 30 L56 26 L52 14" />
+        <path d="M32 30 H48" />
+      </svg>
+    ),
+  },
+  {
+    name: "Linen Wrap Blouse",
+    price: "NPR 78",
+    stock: "18 in stock",
+    art: (
+      <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M26 18 L32 28 L40 24 L48 28 L54 18" />
+        <path d="M32 28 L28 66 H52 L48 28" />
+        <path d="M40 24 L34 66 M40 24 L46 50" />
+      </svg>
+    ),
+  },
+  {
+    name: "Oversized Wool Coat",
+    price: "NPR 248",
+    stock: "5 in stock",
+    art: (
+      <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M24 18 L32 28 L40 22 L48 28 L56 18" />
+        <path d="M32 28 L22 70 H58 L48 28" />
+        <path d="M40 22 V70" />
+        <path d="M28 48 H36 M44 48 H52" />
+      </svg>
+    ),
+  },
+];
+
 export function StorePreview({
   brandName,
   slug,
@@ -54,8 +95,13 @@ export function StorePreview({
   color: string;
 }) {
   const frame = useRef<HTMLDivElement>(null);
+  const isLumina = slug === "lumina";
+  const samples = isLumina ? LUMINA_SAMPLES : GENERIC_SAMPLES;
+  const tagline = isLumina ? "Elevated essentials for modern women" : "Ask for a piece. Hear if it is in stock.";
+  const sub = isLumina
+    ? "Live catalog · shop by voice or click"
+    : "Sample catalog · shop by voice or click";
 
-  // One authored motion: the frame leans toward the pointer. Skipped when the visitor prefers reduced motion.
   useEffect(() => {
     const el = frame.current;
     if (!el) return;
@@ -88,7 +134,7 @@ export function StorePreview({
   }, []);
 
   const initial = (brandName.trim() || "S").slice(0, 1).toUpperCase();
-  const host = `${slug || "your-store"}.localhost:3000`;
+  const host = publicStoreHost(slug || "your-store");
 
   return (
     <div
@@ -116,22 +162,30 @@ export function StorePreview({
           >
             {initial}
           </span>
-          <span className="font-serif text-base leading-none">{brandName.trim() || "Your store"}</span>
+          <div>
+            <span className="block font-serif text-base leading-none">{brandName.trim() || "Your store"}</span>
+            {isLumina && (
+              <span className="mt-1 block text-[10px] text-muted-foreground">Elevated essentials for modern women</span>
+            )}
+          </div>
         </div>
         <nav className="flex items-center gap-3 text-[11px] text-muted-foreground" aria-hidden="true">
           <span className="text-foreground">Shop</span>
+          {isLumina ? <span>Try on</span> : null}
+          <span className="inline-flex items-center gap-1">
+            <Mic className="h-3 w-3" /> {isLumina ? "Ask shop" : "Voice"}
+          </span>
           <span className="inline-flex items-center gap-1">
             <ShoppingBag className="h-3 w-3" /> 0
           </span>
-          <span>Admin</span>
         </nav>
       </div>
 
-      <div className="px-4 pb-4 pt-4">
-        <p className="font-serif text-lg leading-tight">Objects made to last, ready to ship.</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">Sample catalog · stock reads from the store database</p>
+      <div className="relative px-4 pb-4 pt-4">
+        <p className="font-serif text-lg leading-tight">{isLumina ? "Elevated essentials for modern women" : tagline}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">{sub}</p>
         <ul className="mt-3 grid grid-cols-3 gap-2.5">
-          {SAMPLES.map((item) => (
+          {samples.map((item) => (
             <li key={item.name} className="overflow-hidden rounded-lg border">
               <div
                 className="aspect-[4/5] p-3 transition-colors duration-500"
@@ -148,12 +202,81 @@ export function StorePreview({
                   className="block rounded-md py-1 text-center text-[10px] font-medium text-white transition-colors duration-500"
                   style={{ backgroundColor: "var(--brand)" }}
                 >
-                  Add to cart
+                  {item.stock === "Sold out" ? "Sold out" : "Add to cart"}
                 </span>
               </div>
             </li>
           ))}
         </ul>
+        {isLumina ? <PreviewChat brandName={brandName.trim() || "Lumina"} /> : null}
+      </div>
+    </div>
+  );
+}
+
+function PreviewChat({ brandName }: { brandName: string }) {
+  return (
+    <div className="pointer-events-none absolute inset-x-2 bottom-2 sm:inset-x-3 sm:bottom-3" aria-hidden="true">
+      <div className="relative ml-auto w-[min(100%,19.5rem)]">
+        <span
+          className="absolute -left-[4.25rem] bottom-2 z-10 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-medium text-white shadow-sm"
+          style={{ backgroundColor: "var(--brand)" }}
+        >
+          <MessageCircle className="h-3 w-3" />
+          Ask shop
+        </span>
+        <div className="relative z-10 overflow-hidden rounded-2xl border bg-card shadow-[0_16px_36px_-18px_hsl(var(--ink)/0.55)]">
+        <div className="flex items-start justify-between gap-2 border-b px-3 py-2">
+          <div>
+            <p className="text-[11px] font-medium leading-none">Store assistant</p>
+            <p className="mt-1 text-[9px] text-muted-foreground">Speak or type. We never take card numbers here.</p>
+          </div>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <span className="rounded-md p-0.5 text-foreground">
+              <Volume2 className="h-3 w-3" />
+            </span>
+            <RotateCcw className="h-3 w-3 opacity-70" />
+            <X className="h-3 w-3 opacity-70" />
+          </div>
+        </div>
+
+        <div className="space-y-2 px-3 py-2.5">
+          <p className="mr-4 rounded-xl bg-muted px-2.5 py-2 text-[10px] leading-relaxed">
+            Hi, how can we help you at {brandName}? Ask me anything. Whenever you want, I can also read live
+            inventory and place a dress order for you. I never ask for card numbers here.
+          </p>
+          <p className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+            <span className="inline-flex h-3 items-end gap-px" aria-hidden="true">
+              <span className="preview-voice-bar w-px rounded-full bg-[var(--brand)]" style={{ animationDelay: "0ms" }} />
+              <span className="preview-voice-bar w-px rounded-full bg-[var(--brand)]" style={{ animationDelay: "120ms" }} />
+              <span className="preview-voice-bar h-full w-px rounded-full bg-[var(--brand)]" style={{ animationDelay: "240ms" }} />
+              <span className="preview-voice-bar w-px rounded-full bg-[var(--brand)]" style={{ animationDelay: "80ms" }} />
+            </span>
+            Listening… you can speak even while I am reading.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 border-t p-2">
+          <span
+            className="h-7 min-w-0 flex-1 truncate rounded-md border bg-background px-2 text-[9px] leading-7 text-muted-foreground"
+            style={{ boxShadow: "0 0 0 1px color-mix(in oklab, var(--brand) 55%, transparent)" }}
+          >
+            Ask anything, or say what you'd like to order
+          </span>
+          <span
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-white"
+            style={{ backgroundColor: "var(--brand)" }}
+          >
+            <Mic className="h-3 w-3" />
+          </span>
+          <span
+            className="grid h-7 shrink-0 place-items-center rounded-md px-2 text-[9px] font-medium text-white"
+            style={{ backgroundColor: "color-mix(in oklab, var(--brand) 72%, white)" }}
+          >
+            Send
+          </span>
+        </div>
+        </div>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { api, getAgencySlug, setAdminToken } from "@/lib/api";
-import { storeUrlForSlug } from "@/lib/tenant";
+import { publicStoreHost, storeUrlForSlug } from "@/lib/tenant";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -62,11 +62,11 @@ export default function AdminLoginPage() {
             <Input
               value={agencySlug}
               onChange={(e) => setSlug(e.target.value)}
-              placeholder="lumen"
+              placeholder="lumina"
               required
             />
             <p className="text-xs text-muted-foreground">
-              Continue on {agencySlug || "your-slug"}.localhost:3000
+              Continue on {publicStoreHost(agencySlug || "your-slug")}
             </p>
           </div>
         )}

@@ -1,10 +1,28 @@
-import { Bell, CreditCard, ImagePlus, LayoutDashboard, Mail, MessageSquare, Store } from "lucide-react";
+import {
+  Accessibility,
+  CreditCard,
+  ImagePlus,
+  LayoutDashboard,
+  Mic,
+  Store,
+} from "lucide-react";
+import { STORE_PUBLIC_DOMAIN } from "@/lib/tenant";
 
 const ROWS = [
   {
     icon: Store,
     title: "A storefront on its own subdomain",
-    body: "Brand name, logo, tagline and primary color come from the shop's settings. The catalog reads live stock straight from the database.",
+    body: `Each shop lives at its own address on ${STORE_PUBLIC_DOMAIN}. Brand name, logo, tagline and color come from that shop's settings.`,
+  },
+  {
+    icon: Mic,
+    title: "Voice shopping for every customer",
+    body: "Customers ask what is in stock, hear prices, and place orders by speaking. The assistant answers from live inventory, not a script.",
+  },
+  {
+    icon: Accessibility,
+    title: "Accessible commerce, not an afterthought",
+    body: "Keyboard paths, labeled controls, and spoken shopping share the same storefront so B2B buyers can purchase however they work best.",
   },
   {
     icon: LayoutDashboard,
@@ -17,19 +35,9 @@ const ROWS = [
     body: "The cart hands off to a Stripe Checkout session. The webhook confirms payment and records the order with an invoice number.",
   },
   {
-    icon: Mail,
-    title: "Invoice emails",
-    body: "A paid order sends the customer an invoice over SMTP, with line items and the shop's own name on it.",
-  },
-  {
     icon: ImagePlus,
     title: "Listings drafted from a photo",
-    body: "Upload a product image to Cloudinary and the assistant drafts the name, description, category and tags for you to edit.",
-  },
-  {
-    icon: Bell,
-    title: "Alerts and notifications",
-    body: "Low stock and new orders surface in the admin so the owner sees what needs attention without opening every page.",
+    body: "Upload a product image and the assistant drafts the name, description, category and tags for you to edit and publish.",
   },
 ];
 
@@ -42,7 +50,8 @@ export function Capabilities() {
             What every shop ships with
           </h2>
           <p className="mt-5 max-w-[40ch] text-lg leading-relaxed text-muted-foreground">
-            The same code serves every shop, so a new one starts with the whole kit on day one.
+            The same platform serves every tenant, so a new store starts voice-ready and accessible
+            on day one.
           </p>
         </div>
 
@@ -61,28 +70,31 @@ export function Capabilities() {
 
           <div className="mt-12 grid gap-8 rounded-2xl bg-primary p-6 text-primary-foreground sm:p-8 lg:grid-cols-5">
             <div className="lg:col-span-2">
-              <MessageSquare className="h-6 w-6" aria-hidden="true" />
+              <Mic className="h-6 w-6" aria-hidden="true" />
               <h3 className="mt-4 text-balance font-serif text-3xl leading-tight">
-                An assistant that answers from live stock
+                A spoken assistant that answers from live stock
               </h3>
               <p className="mt-3 leading-relaxed text-primary-foreground/80">
-                The chat widget on every storefront reads the shop's current products before it replies,
-                so it never promises something that sold out an hour ago.
+                Talk to any storefront. It reads current products before it replies, so it never
+                promises something that sold out an hour ago.
               </p>
             </div>
             <div className="lg:col-span-3">
-              <ol className="space-y-3 text-sm" aria-label="Sample conversation">
+              <ol className="space-y-3 text-sm" aria-label="Sample spoken conversation">
                 <Bubble who="Customer">Do you still have the ash stool, and how much is it?</Bubble>
                 <Bubble who="Assistant" reply>
-                  Yes. The ash stool is NPR 180 and there are 6 in stock right now. It's on the Shop page,
-                  first row.
+                  Yes. The ash stool is NPR 180 and there are 6 in stock right now. It's on the Shop
+                  page, first row. Shall I add one to your order?
                 </Bubble>
-                <Bubble who="Customer">Anything in linen under NPR 100?</Bubble>
+                <Bubble who="Customer">Yes. Anything in linen under NPR 100?</Bubble>
                 <Bubble who="Assistant" reply>
-                  The linen throw is NPR 96 with 12 in stock. That's the only linen piece published today.
+                  The linen throw is NPR 96 with 12 in stock. That's the only linen piece published
+                  today. I can add that too.
                 </Bubble>
               </ol>
-              <p className="mt-4 text-xs text-primary-foreground/70">Sample conversation, sample catalog.</p>
+              <p className="mt-4 text-xs text-primary-foreground/70">
+                Sample voice conversation, sample catalog.
+              </p>
             </div>
           </div>
         </div>

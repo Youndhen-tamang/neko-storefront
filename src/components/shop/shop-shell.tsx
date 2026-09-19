@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { Branding, api, getAgencySlug } from "@/lib/api";
 import { cartCount, openCartDrawer } from "@/lib/cart";
-import { storeUrlForSlug } from "@/lib/tenant";
+import { publicStoreHost, storeUrlForSlug } from "@/lib/tenant";
 import { CartDrawer } from "@/components/shop/cart-drawer";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { openStoreChat } from "@/lib/speech";
@@ -84,7 +84,7 @@ export function ShopShell({
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
         <h1 className="font-serif text-3xl">Open a store</h1>
         <p className="mt-2 text-muted-foreground">
-          Stores live on a subdomain, for example lumen.localhost:3000.
+          Stores live on a subdomain, for example {publicStoreHost("lumina")}.
         </p>
         <form
           className="mt-6 flex gap-2"
@@ -96,7 +96,7 @@ export function ShopShell({
         >
           <input
             className="h-10 flex-1 rounded-md border bg-background px-3"
-            placeholder="lumen"
+            placeholder="lumina"
             value={manualSlug}
             onChange={(e) => setManualSlug(e.target.value)}
           />

@@ -12,8 +12,9 @@ async function currentSlug() {
 export async function generateMetadata(): Promise<Metadata> {
   if (await currentSlug()) return {};
   return {
-    title: "Neko",
-    description: "One backend, every storefront. Each shop on its own subdomain with its own admin.",
+    title: "VocaCommerce — Accessible B2B Commerce for Everyone",
+    description:
+      "A multi-tenant platform where anyone can create an accessible e-commerce store, and customers can interact with those stores through voice.",
   };
 }
 

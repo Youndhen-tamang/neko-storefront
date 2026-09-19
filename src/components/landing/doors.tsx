@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { STORE_PUBLIC_DOMAIN } from "@/lib/tenant";
 
 const SUPER_ADMIN_URL = process.env.NEXT_PUBLIC_SUPER_ADMIN_URL || "http://localhost:3004";
 
@@ -18,20 +19,20 @@ export function Doors() {
           <Door
             href="/admin/login"
             title="Shop owner"
-            body="Sign in to your shop's admin. You'll be taken to your subdomain first."
+            body="Sign in to run your accessible storefront. You'll land on your subdomain first."
             action="Sign in"
           />
           <Door
             href={SUPER_ADMIN_URL}
             title="Super admin"
-            body="Create shops, assign owners, and see orders across all of them."
+            body="Create shops, assign owners, and see orders across every tenant."
             action="Open super admin"
             external
           />
           <Door
-            href="#open"
+            href="#preview"
             title="Shopper"
-            body="Every shop has its own address. Type its name at the top to open it."
+            body={`Every shop has its own address on ${STORE_PUBLIC_DOMAIN}. Type its name at the top to open it — then speak, or click.`}
             action="Find a shop"
           />
         </ul>

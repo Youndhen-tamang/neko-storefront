@@ -1,5 +1,12 @@
 const RESERVED = new Set(["www", "api", "admin", "app", "super-admin"]);
 
+/** Public apex domain used in landing copy and storefront addresses. */
+export const STORE_PUBLIC_DOMAIN = "strapnote.com";
+
+export function publicStoreHost(slug: string) {
+  return `${slug}.${STORE_PUBLIC_DOMAIN}`;
+}
+
 /**
  * Public hostname of the storefront in production, e.g. "yourdomain.com".
  * Tenants live on `{slug}.{STORE_HOST}`. Unset (or "localhost") in development.

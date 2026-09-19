@@ -157,6 +157,30 @@ a {
   }
 }
 
+@keyframes preview-voice {
+  0%,
+  100% {
+    height: 35%;
+  }
+  50% {
+    height: 100%;
+  }
+}
+.preview-voice-bar {
+  display: block;
+  width: 1.5px;
+  height: 35%;
+  min-height: 3px;
+  transform-origin: bottom;
+  animation: preview-voice 0.85s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview-voice-bar {
+    animation: none;
+    height: 70%;
+  }
+}
+
 /* Doors: the whole row is the link. */
 .door:hover h3,
 .door:focus-visible h3 {

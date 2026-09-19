@@ -14,8 +14,8 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Store",
-  description: "Multi-tenant ecommerce storefront",
+  title: "VocaCommerce",
+  description: "Accessible B2B commerce for everyone. Create a store. Shop by voice.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
