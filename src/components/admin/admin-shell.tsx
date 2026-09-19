@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { clearAdminToken, getAdminToken } from "@/lib/api";
+import { api, clearAdminToken, getAdminToken } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -60,11 +60,36 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [navOpen, setNavOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [badges, setBadges] = useState({ alerts: 0, unread: 0 });
   const title = useMemo(() => pageTitle(pathname), [pathname]);
 
   useEffect(() => {
     if (!getAdminToken()) router.replace("/admin/login");
   }, [router]);
+
+  useEffect(() => {
+    if (!getAdminToken()) return;
+
+    function loadBadges() {
+      Promise.all([
+        api<{ stats: { unreadNotifications: number } }>("/api/admin/dashboard", { auth: true }),
+        api<{ alerts: { lowStock: unknown[]; pendingOrders: unknown[] } }>("/api/admin/dashboard/alerts", {
+          auth: true,
+        }),
+      ])
+        .then(([dash, alerts]) => {
+          setBadges({
+            unread: dash.stats.unreadNotifications ?? 0,
+            alerts: (alerts.alerts.lowStock?.length ?? 0) + (alerts.alerts.pendingOrders?.length ?? 0),
+          });
+        })
+        .catch(() => undefined);
+    }
+
+    loadBadges();
+    window.addEventListener("admin-badges", loadBadges);
+    return () => window.removeEventListener("admin-badges", loadBadges);
+  }, [pathname]);
 
   useEffect(() => {
     setNavOpen(false);
@@ -90,19 +115,33 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   function Nav() {
     return (
       <nav className="flex flex-1 flex-col gap-1">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={cn(
-              "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm",
-              isActive(pathname, link.href) ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-            )}
-          >
-            <link.icon className="h-4 w-4 shrink-0" />
-            {link.label}
-          </Link>
-        ))}
+        {links.map((link) => {
+          const count = link.href === "/admin/alerts" ? badges.alerts : link.href === "/admin/notifications" ? badges.unread : 0;
+          const active = isActive(pathname, link.href);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm",
+                active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+              )}
+            >
+              <link.icon className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate">{link.label}</span>
+              {count > 0 && (
+                <span
+                  className={cn(
+                    "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tabular-nums",
+                    active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary text-primary-foreground"
+                  )}
+                >
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
+            </Link>
+          );
+        })}
         <div className="mt-auto pt-3">
           <Button className="w-full" type="button" onClick={() => setLogoutOpen(true)}>
             <LogOut className="h-4 w-4" />

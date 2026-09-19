@@ -213,6 +213,8 @@ export default function SettingsPage() {
           />
         </div>
       </section>
+<div className="flex flex-col  md:flex-row gap-4 justify-evenly">
+
 
       <form
         className="mt-10 max-w-xl space-y-4 rounded-2xl border bg-card p-6"
@@ -304,6 +306,7 @@ export default function SettingsPage() {
         <Button type="submit">Save branding</Button>
       </form>
       <WhatsAppCard />
+      </div>
     </AdminShell>
   );
 }
