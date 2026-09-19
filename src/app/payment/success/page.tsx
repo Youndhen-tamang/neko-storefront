@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { OrderConfirmed } from "@/components/shop/order-confirmed";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { Order, api, getAgencySlug } from "@/lib/api";
@@ -14,6 +14,8 @@ function EsewaSuccessInner() {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(Boolean(data));
+  // React runs effects twice in development; verify must only be sent once per page load.
+  const verified = useRef<string | null>(null);
 
   useEffect(() => {
     if (!data) {
@@ -21,6 +23,8 @@ function EsewaSuccessInner() {
       setError("Missing eSewa payment details.");
       return;
     }
+    if (verified.current === data) return;
+    verified.current = data;
     api<{ order: Order }>("/api/esewa/verify", {
       method: "POST",
       body: JSON.stringify({ data }),
