@@ -24,16 +24,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${outfit.variable} ${fraunces.variable} font-sans`}>
         {children}
         <Toaster
+          theme="light"
           position="bottom-right"
           toastOptions={{
             classNames: {
-              toast: "border border-border bg-card text-card-foreground shadow-sm font-sans",
+              toast: "border border-border bg-white text-foreground shadow-sm font-sans",
               title: "text-sm font-medium text-foreground",
               description: "text-sm text-muted-foreground",
-              success: "border-primary bg-primary text-primary-foreground",
-              error: "border-destructive bg-destructive text-destructive-foreground",
+              success: "border-border bg-white text-foreground",
+              error: "border-border bg-white text-foreground",
               actionButton: "bg-primary text-primary-foreground",
-              closeButton: "border-border bg-card text-foreground",
+              closeButton: "border-border bg-white text-foreground",
             },
           }}
         />

@@ -146,12 +146,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <aside className="hidden border-r bg-card lg:flex lg:min-h-screen lg:flex-col">
+      <aside className="hidden border-r bg-card lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:self-start lg:overflow-y-auto">
         <div className="px-5 py-5">
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Agency admin</p>
           <p className="mt-1 font-serif text-xl">Operations</p>
         </div>
-        <div className="flex flex-1 flex-col px-3 pb-4">
+        <div className="flex min-h-0 flex-1 flex-col px-3 pb-4">
           <Nav />
         </div>
       </aside>

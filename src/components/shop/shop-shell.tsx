@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ShoppingBag } from "lucide-react";
 import { Branding, api, getAgencySlug } from "@/lib/api";
 import { cartCount, openCartDrawer } from "@/lib/cart";
 import { storeUrlForSlug } from "@/lib/tenant";
@@ -187,15 +188,22 @@ export function ShopShell({
               <button type="button" onClick={() => openStoreChat()}>
                 Ask shop
               </button>
-              <button type="button" onClick={() => openCartDrawer()}>
-                Cart ({count})
-              </button>
-              <Link
-                href="/admin/login"
-                className={template === "boutique" ? "text-white/50" : "text-muted-foreground"}
+              <button
+                type="button"
+                onClick={() => openCartDrawer()}
+                className={cn(
+                  "relative grid h-9 w-9 place-items-center rounded-full normal-case tracking-normal",
+                  template === "boutique" ? "hover:bg-white/10" : "hover:bg-black/5"
+                )}
+                aria-label={count ? `Cart, ${count} items` : "Cart"}
               >
-                Admin
-              </Link>
+                <ShoppingBag className="h-5 w-5" />
+                {count > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-medium leading-none text-primary-foreground">
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
+              </button>
             </nav>
           </div>
         </header>

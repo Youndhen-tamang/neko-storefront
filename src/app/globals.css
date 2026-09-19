@@ -58,19 +58,19 @@ a {
   text-underline-offset: 0.2em;
 }
 
-[data-sonner-toaster] {
+[data-sonner-toaster],
+[data-sonner-toaster][data-theme="light"],
+[data-sonner-toaster][data-theme="dark"] {
   font-family: inherit;
-}
-[data-sonner-toast] {
-  --normal-bg: hsl(var(--card));
+  --normal-bg: #fff;
   --normal-border: hsl(var(--border));
   --normal-text: hsl(var(--foreground));
-  --success-bg: hsl(var(--primary));
-  --success-border: hsl(var(--primary));
-  --success-text: hsl(var(--primary-foreground));
-  --error-bg: hsl(var(--destructive));
-  --error-border: hsl(var(--destructive));
-  --error-text: hsl(var(--destructive-foreground));
+  --success-bg: #fff;
+  --success-border: hsl(var(--border));
+  --success-text: hsl(var(--foreground));
+  --error-bg: #fff;
+  --error-border: hsl(var(--border));
+  --error-text: hsl(var(--foreground));
 }
 @supports (scrollbar-color: auto) {
   html {
