@@ -60,7 +60,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [navOpen, setNavOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [badges, setBadges] = useState({ alerts: 0, unread: 0 });
+  const [badges, setBadges] = useState({ alerts: 0, unread: 0, orders: 0 });
   const title = useMemo(() => pageTitle(pathname), [pathname]);
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
     function loadBadges() {
       Promise.all([
-        api<{ stats: { unreadNotifications: number } }>("/api/admin/dashboard", { auth: true }),
+        api<{ stats: { unreadNotifications: number; unreadOrders?: number } }>("/api/admin/dashboard", { auth: true }),
         api<{ alerts: { lowStock: unknown[]; pendingOrders: unknown[] } }>("/api/admin/dashboard/alerts", {
           auth: true,
         }),
@@ -80,6 +80,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         .then(([dash, alerts]) => {
           setBadges({
             unread: dash.stats.unreadNotifications ?? 0,
+            orders: dash.stats.unreadOrders ?? 0,
             alerts: (alerts.alerts.lowStock?.length ?? 0) + (alerts.alerts.pendingOrders?.length ?? 0),
           });
         })
@@ -116,7 +117,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     return (
       <nav className="flex flex-1 flex-col gap-1">
         {links.map((link) => {
-          const count = link.href === "/admin/alerts" ? badges.alerts : link.href === "/admin/notifications" ? badges.unread : 0;
+          const count =
+            link.href === "/admin/alerts"
+              ? badges.alerts
+              : link.href === "/admin/notifications"
+                ? badges.unread
+                : link.href === "/admin/orders"
+                  ? badges.orders
+                  : 0;
           const active = isActive(pathname, link.href);
           return (
             <Link

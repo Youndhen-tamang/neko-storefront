@@ -31,6 +31,7 @@ type Stats = {
   orderCount: number;
   revenueCents: number;
   unreadNotifications: number;
+  unreadOrders?: number;
   likeCount?: number;
   commentCount?: number;
   lowStock: StockItem[];
@@ -66,7 +67,13 @@ export default function AdminDashboardPage() {
 
   const kpis = [
     { label: "Products", value: stats?.productCount ?? 0, icon: Package, href: "/admin/products" },
-    { label: "Orders", value: stats?.orderCount ?? 0, icon: ShoppingBag, href: "/admin/orders" },
+    {
+      label: "Orders",
+      value: stats?.orderCount ?? 0,
+      icon: ShoppingBag,
+      href: "/admin/orders",
+      warn: (stats?.unreadOrders ?? 0) > 0,
+    },
     { label: "Revenue", value: money(stats?.revenueCents ?? 0), icon: Wallet, href: "/admin/analytics" },
     {
       label: "Unread",

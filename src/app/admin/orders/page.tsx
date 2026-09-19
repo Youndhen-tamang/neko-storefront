@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Order, api } from "@/lib/api";
-import { money, paymentMethodLabel } from "@/lib/utils";
+import { cn, money, paymentMethodLabel } from "@/lib/utils";
 
 const statuses = ["lead", "ordered", "dispatched", "delivered", "cancelled"];
 
@@ -16,12 +16,16 @@ function isoDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+type Filter = "all" | "unread";
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [marking, setMarking] = useState(false);
 
   function load(next?: { q?: string; status?: string; from?: string; to?: string }) {
     const nextQ = next?.q ?? q;
@@ -34,7 +38,7 @@ export default function OrdersPage() {
     if (nextFrom) params.set("from", nextFrom);
     if (nextTo) params.set("to", nextTo);
     const query = params.toString();
-    api<{ orders: Order[] }>(`/api/orders${query ? `?${query}` : ""}`, { auth: true })
+    return api<{ orders: Order[]; unreadCount?: number }>(`/api/orders${query ? `?${query}` : ""}`, { auth: true })
       .then((data) => setOrders(data.orders))
       .catch((error) => toast.error(error.message));
   }
@@ -44,10 +48,51 @@ export default function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
+  const unread = orders.filter((order) => !order.read).length;
+  const visible = filter === "unread" ? orders.filter((order) => !order.read) : orders;
+
+  async function markRead(id: string) {
+    const current = orders.find((order) => order.id === id);
+    if (!current || current.read) return;
+    setOrders((prev) => prev.map((order) => (order.id === id ? { ...order, read: true } : order)));
+    try {
+      await api(`/api/orders/${id}/read`, { method: "PATCH", auth: true });
+      window.dispatchEvent(new Event("admin-badges"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not mark read");
+      load();
+    }
+  }
+
   return (
     <AdminShell>
-      <h1 className="font-serif text-4xl">Orders</h1>
-      <p className="mt-2 text-muted-foreground">Filter by customer, date, or status, then update fulfillment labels.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-4xl">Orders</h1>
+          <p className="mt-2 text-muted-foreground">
+            {unread ? `${unread} new ${unread === 1 ? "order" : "orders"} to review` : "Filter by customer, date, or status, then update fulfillment labels."}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          disabled={marking || unread === 0}
+          onClick={async () => {
+            setMarking(true);
+            try {
+              await api("/api/orders/read-all", { method: "POST", auth: true });
+              toast.success("Marked all read");
+              await load();
+              window.dispatchEvent(new Event("admin-badges"));
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Could not update");
+            } finally {
+              setMarking(false);
+            }
+          }}
+        >
+          {marking ? "Updating…" : "Mark all read"}
+        </Button>
+      </div>
       <form
         className="mt-6 grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[1fr_160px_160px_160px_auto]"
         onSubmit={(e) => {
@@ -74,7 +119,26 @@ export default function OrdersPage() {
           Filter
         </Button>
       </form>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {(
+          [
+            { id: "all", label: "All", count: orders.length },
+            { id: "unread", label: "New", count: unread },
+          ] as const
+        ).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setFilter(item.id)}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-sm",
+              filter === item.id ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
+            )}
+          >
+            {item.label}
+            <span className="ml-1.5 tabular-nums opacity-80">{item.count}</span>
+          </button>
+        ))}
         <button
           type="button"
           className="rounded-full border px-3 py-1 text-xs hover:bg-muted"
@@ -96,6 +160,7 @@ export default function OrdersPage() {
             setStatus("");
             setFrom("");
             setTo("");
+            setFilter("all");
             load({ q: "", status: "", from: "", to: "" });
           }}
         >
@@ -113,17 +178,28 @@ export default function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.length === 0 && (
+            {visible.length === 0 && (
               <TableRow>
                 <TableCell colSpan={4} className="text-muted-foreground">
-                  No orders match these filters.
+                  {filter === "unread" ? "No new orders to review." : "No orders match these filters."}
                 </TableCell>
               </TableRow>
             )}
-            {orders.map((order) => (
-              <TableRow key={order.id}>
+            {visible.map((order) => (
+              <TableRow
+                key={order.id}
+                className={cn("cursor-pointer", !order.read && "bg-primary/[0.06] hover:bg-primary/10")}
+                onClick={() => void markRead(order.id)}
+              >
                 <TableCell>
-                  <div>{order.invoice_number}</div>
+                  <div className="flex items-center gap-2">
+                    <span>{order.invoice_number}</span>
+                    {!order.read && (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary-foreground">
+                        New
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {paymentMethodLabel(order.payment_method)}{" · "}
                     {order.items?.map((item) => `${item.quantity}× ${item.name}`).join(", ")}
@@ -139,13 +215,17 @@ export default function OrdersPage() {
                     {statuses.map((item) => (
                       <button
                         key={item}
-                        onClick={async () => {
+                        type="button"
+                        onClick={async (event) => {
+                          event.stopPropagation();
                           await api(`/api/orders/${order.id}/status`, {
                             method: "PATCH",
                             auth: true,
                             body: JSON.stringify({ status: item }),
                           });
                           toast.success(`Marked ${item}`);
+                          await markRead(order.id);
+                          window.dispatchEvent(new Event("admin-badges"));
                           load();
                         }}
                       >
