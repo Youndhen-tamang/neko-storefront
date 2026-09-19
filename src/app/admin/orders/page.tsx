@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Order, api } from "@/lib/api";
-import { money } from "@/lib/utils";
+import { money, paymentMethodLabel } from "@/lib/utils";
 
 const statuses = ["lead", "ordered", "dispatched", "delivered", "cancelled"];
 
@@ -125,7 +125,7 @@ export default function OrdersPage() {
                 <TableCell>
                   <div>{order.invoice_number}</div>
                   <div className="text-xs text-muted-foreground">
-                    {order.payment_method === "cod" ? "Cash on delivery · " : "Stripe · "}
+                    {paymentMethodLabel(order.payment_method)}{" · "}
                     {order.items?.map((item) => `${item.quantity}× ${item.name}`).join(", ")}
                   </div>
                 </TableCell>

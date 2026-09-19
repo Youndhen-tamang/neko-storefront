@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Lock, MapPin, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { EsewaButton } from "@/components/shop/esewa-button";
 import { QuantityStepper } from "@/components/shop/quantity-stepper";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { Button } from "@/components/ui/button";
@@ -43,11 +44,16 @@ export default function CartPage() {
     setItems(removeFromCart(getAgencySlug(), productId));
   }
 
-  async function checkout(method: "stripe" | "cod") {
+  function validateCustomer() {
     if (!customerName.trim() || !customerEmail.trim() || !shippingAddress.trim()) {
       toast.error("Please add your name, email, and shipping location.");
-      return;
+      return false;
     }
+    return true;
+  }
+
+  async function checkout(method: "stripe" | "cod") {
+    if (!validateCustomer()) return;
     setLoading(true);
     try {
       const payload = {
@@ -254,10 +260,23 @@ export default function CartPage() {
                 >
                   {loading ? "Redirecting to Stripe..." : `Pay ${money(total)} with Stripe`}
                 </Button>
+                <EsewaButton
+                  payload={{
+                    customerName,
+                    customerEmail,
+                    customerPhone,
+                    shippingAddress,
+                    items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+                  }}
+                  label={`Pay ${money(total)} with eSewa`}
+                  disabled={loading}
+                  validate={validateCustomer}
+                  onError={(message) => toast.error(message)}
+                />
               </div>
               <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
                 <Lock className="h-3 w-3" />
-                Stripe opens a page where you type card details yourself. Cash on delivery is paid when the order arrives.
+                Stripe and eSewa open a secure page where you complete the payment yourself. Cash on delivery is paid when the order arrives.
               </p>
             </form>
           </aside>
