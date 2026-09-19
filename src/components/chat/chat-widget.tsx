@@ -19,9 +19,9 @@ import {
   isNegative,
   listenForSpeech,
   listenOnce,
-  looksLikeEcho,
+  listenFailure,
+  primeVoice,
   speak,
-  speakAndListen,
   speechSupported,
   stopSpeaking,
 } from "@/lib/speech";
@@ -148,7 +148,9 @@ export function ChatWidget({ brandName }: { brandName: string }) {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesRef = useRef(messages);
+  const voiceOnRef = useRef(voiceOn);
   messagesRef.current = messages;
+  voiceOnRef.current = voiceOn;
 
   function scrollToLatest() {
     const list = listRef.current;
@@ -165,6 +167,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
   async function actOnBehalf(note: string) {
     setBehalf(note);
     setLiveText(note);
+    primeVoice();
     await speak(note);
   }
 
@@ -283,6 +286,27 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     })();
   }, [messages]);
 
+  function wantsReceiptDownload(text: string) {
+    return isAffirmative(text) || /\b(download|receipt|pdf)\b/i.test(text);
+  }
+
+  async function fulfillReceiptDownload(order: Order) {
+    listenGen.current += 1;
+    cancelListening();
+    setListening(false);
+    await actOnBehalf("I'm downloading the receipt on your behalf.");
+    try {
+      await downloadOrderReceipt(order, branding);
+      const done = "The receipt PDF is downloading now.";
+      setMessages((current) => [...current, { role: "assistant", content: done }]);
+      await speak(done);
+    } catch {
+      const fail = "I couldn't create the PDF. There is a Download PDF button on this page.";
+      setMessages((current) => [...current, { role: "assistant", content: fail }]);
+      await speak(fail);
+    }
+  }
+
   useEffect(() => {
     async function onReceipt(event: Event) {
       const order = (event as CustomEvent<{ order: Order }>).detail?.order;
@@ -294,23 +318,17 @@ export function ChatWidget({ brandName }: { brandName: string }) {
       setMessages((current) => [...current, { role: "assistant", content: thanks }]);
       setLiveText(thanks);
       await speak(thanks);
+      if (receiptOrder.current?.id !== order.id) return;
       setListening(true);
       const answer = await listenForSpeech({ idleMs: 12000, pauseMs: 1800 });
       setListening(false);
-      if (answer && isAffirmative(answer)) {
+      if (receiptOrder.current?.id !== order.id) return;
+      if (answer && wantsReceiptDownload(answer)) {
+        receiptOrder.current = null;
         setMessages((current) => [...current, { role: "user", content: answer }]);
-        await actOnBehalf("I'm downloading the receipt on your behalf.");
-        try {
-          await downloadOrderReceipt(order, branding);
-          const done = "The receipt PDF is downloading now.";
-          setMessages((current) => [...current, { role: "assistant", content: done }]);
-          await speak(done);
-        } catch {
-          const fail = "I couldn't create the PDF. There is a Download receipt button on this page.";
-          setMessages((current) => [...current, { role: "assistant", content: fail }]);
-          await speak(fail);
-        }
+        await fulfillReceiptDownload(order);
       } else if (answer && isNegative(answer)) {
+        receiptOrder.current = null;
         setMessages((current) => [
           ...current,
           { role: "user", content: answer },
@@ -380,31 +398,34 @@ export function ChatWidget({ brandName }: { brandName: string }) {
   async function speakThenHear(text: string) {
     if (!speechSupported() || !text.trim()) return;
     const gen = ++listenGen.current;
-    setListening(true);
-    setLiveText("Speaking. You can interrupt anytime.");
-    const transcript = await speakAndListen(text, {
-      onPartial: (heard) => {
-        if (gen === listenGen.current) setInput(heard);
-      },
-    });
+    setListening(false);
+    setLiveText("Speaking your reply.");
+    await speak(text);
     if (gen !== listenGen.current) return;
-    let heard = transcript && looksLikeEcho(transcript, text, { strict: true }) ? null : transcript;
+    let heard: string | null = null;
     while (!heard && gen === listenGen.current) {
       setListening(true);
       setLiveText("I'm listening. Please speak.");
-      const next = await listenForSpeech({
+      heard = await listenForSpeech({
         idleMs: 20000,
-        pauseMs: 2000,
+        pauseMs: 1800,
         onPartial: (value) => {
           if (gen === listenGen.current) setInput(value);
         },
       });
       if (gen !== listenGen.current) return;
-      heard = next && looksLikeEcho(next, text) ? null : next;
+      const failure = listenFailure();
+      if (!heard && (failure === "not-allowed" || failure === "service-not-allowed" || failure === "audio-capture")) {
+        const denied = "Please allow the microphone, then tap the microphone button and speak.";
+        setLiveText(denied);
+        await speak(denied);
+        break;
+      }
     }
     if (gen !== listenGen.current) return;
     setListening(false);
     if (heard) {
+      voiceOnRef.current = true;
       setVoiceOn(true);
       localStorage.setItem(VOICE_KEY, "on");
       await send(heard);
@@ -412,8 +433,10 @@ export function ChatWidget({ brandName }: { brandName: string }) {
   }
 
   async function acceptWelcome() {
+    primeVoice();
     markWelcomeDone();
     setOpen(true);
+    voiceOnRef.current = true;
     setVoiceOn(true);
     localStorage.setItem(VOICE_KEY, "on");
     const hello = greeting(brandName);
@@ -449,18 +472,38 @@ export function ChatWidget({ brandName }: { brandName: string }) {
 
   function toggleVoice() {
     const next = !voiceOn;
+    voiceOnRef.current = next;
     setVoiceOn(next);
     localStorage.setItem(VOICE_KEY, next ? "on" : "off");
-    if (!next) stopSpeaking();
-    else {
-      const latest = [...messages].reverse().find((message) => message.role === "assistant");
-      if (latest) void speak(displayMessage(latest).text);
+    if (!next) {
+      listenGen.current += 1;
+      cancelListening();
+      stopSpeaking();
+      setListening(false);
+      return;
     }
+    primeVoice();
+    const latest = [...messages].reverse().find((message) => message.role === "assistant");
+    if (latest) void speakThenHear(displayMessage(latest).text);
   }
 
   async function send(textOverride?: string) {
     const text = (textOverride ?? input).trim();
     if (!text) return;
+    const offered = receiptOrder.current;
+    if (offered && (wantsReceiptDownload(text) || isNegative(text))) {
+      receiptOrder.current = null;
+      setInput("");
+      setMessages((current) => [...current, { role: "user", content: text }]);
+      if (isNegative(text) && !wantsReceiptDownload(text)) {
+        const skip = "Okay. You can download the receipt from this page anytime.";
+        setMessages((current) => [...current, { role: "assistant", content: skip }]);
+        await speak(skip);
+        return;
+      }
+      await fulfillReceiptDownload(offered);
+      return;
+    }
     const history = [...messagesRef.current, { role: "user" as const, content: text }];
     const epoch = chatEpoch.current;
     setMessages(history);
@@ -470,6 +513,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     listenGen.current += 1;
     cancelListening();
     stopSpeaking();
+    primeVoice();
     try {
       const data = await sendToChat({
         message: text,
@@ -493,9 +537,9 @@ export function ChatWidget({ brandName }: { brandName: string }) {
       }
       const spokenReply = displayMessage(assistant).text;
       announce(spokenReply, false);
-      if (!data.checkoutUrl && speechSupported()) {
+      if (voiceOnRef.current && !data.checkoutUrl && speechSupported()) {
         await speakThenHear(spokenReply);
-      } else {
+      } else if (voiceOnRef.current) {
         await speak(spokenReply);
       }
     } catch (error) {
@@ -525,21 +569,25 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     const gen = ++listenGen.current;
     cancelListening();
     stopSpeaking();
+    primeVoice();
     setListening(true);
     setLiveText("I'm listening. Please speak.");
     try {
+      const transcriptPromise = listenOnce((text) => {
+        if (gen === listenGen.current) setInput(text);
+      });
       const denied = await ensureMicrophone();
       if (gen !== listenGen.current) return;
       if (denied) {
+        cancelListening();
         setLiveText(denied);
         await speak(denied);
         return;
       }
-      const transcript = await listenOnce((text) => {
-        if (gen === listenGen.current) setInput(text);
-      });
+      const transcript = await transcriptPromise;
       if (gen !== listenGen.current) return;
       if (transcript) {
+        voiceOnRef.current = true;
         setVoiceOn(true);
         localStorage.setItem(VOICE_KEY, "on");
         setInput(transcript);
@@ -712,9 +760,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
               );
             })}
             {loading && <p className="text-xs text-muted-foreground">Answering your question...</p>}
-            {listening && (
-              <p className="text-xs text-muted-foreground">Listening… you can speak even while I am reading.</p>
-            )}
+            {listening && <p className="text-xs text-muted-foreground">Listening… please speak now.</p>}
           </div>
           <form
             className="space-y-2 border-t p-3"
@@ -767,6 +813,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
         aria-expanded={open}
         aria-controls="store-assistant"
         onClick={() => {
+          primeVoice();
           setShowWelcome(false);
           setOpen((value) => !value);
         }}

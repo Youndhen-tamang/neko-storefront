@@ -5,6 +5,7 @@ export const CHAT_RECEIPT_EVENT = "store-chat-receipt";
 
 export function openStoreChat() {
   if (typeof window === "undefined") return;
+  primeVoice();
   window.dispatchEvent(new Event(CHAT_OPEN_EVENT));
 }
 
@@ -29,7 +30,34 @@ type SpeechRecognitionLike = {
 };
 
 let listenSession = 0;
+let lastListenError: string | null = null;
 let activeRecognition: SpeechRecognitionLike | null = null;
+let speakGen = 0;
+let currentAudio: HTMLAudioElement | null = null;
+let sharedAudio: HTMLAudioElement | null = null;
+let speaking = false;
+
+const SILENT_WAV =
+  "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+
+export function primeVoice() {
+  if (typeof window === "undefined") return;
+  if (!sharedAudio) sharedAudio = new Audio();
+  try {
+    sharedAudio.src = SILENT_WAV;
+    void sharedAudio.play().then(
+      () => {
+        if (!speaking && sharedAudio?.src.startsWith("data:")) {
+          sharedAudio.pause();
+          sharedAudio.currentTime = 0;
+        }
+      },
+      () => undefined
+    );
+  } catch {
+    // Autoplay may still be blocked until a later gesture.
+  }
+}
 
 export function cancelListening() {
   listenSession += 1;
@@ -67,10 +95,21 @@ export function speechSupported() {
   return typeof window !== "undefined" && Boolean(RecognitionCtor());
 }
 
+export function listenFailure() {
+  return lastListenError;
+}
+
 export function listenOnce(onPartial?: (text: string) => void): Promise<string> {
+  lastListenError = null;
   return listenForSpeech({ idleMs: 12000, pauseMs: 2000, onPartial }).then((text) => {
-    if (!text) throw new Error("I couldn't hear that. Tap the microphone and try again.");
-    return text;
+    if (text) return text;
+    if (lastListenError === "not-allowed" || lastListenError === "service-not-allowed") {
+      throw new Error("Please allow the microphone, then tap the microphone button and speak.");
+    }
+    if (lastListenError === "audio-capture" || lastListenError === "network") {
+      throw new Error("I couldn't reach the microphone. Check the connection and try again.");
+    }
+    throw new Error("I couldn't hear that. Tap the microphone and try again.");
   });
 }
 
@@ -160,6 +199,7 @@ export function listenForSpeech(options?: {
     }
 
     const session = ++listenSession;
+    lastListenError = null;
     const recognition = new Ctor();
     recognition.lang = "en-US";
     recognition.interimResults = true;
@@ -240,6 +280,7 @@ export function listenForSpeech(options?: {
     };
 
     recognition.onerror = (event) => {
+      lastListenError = event.error || "error";
       if (event.error === "aborted" || event.error === "no-speech") return;
       finish(spoken || null);
     };
@@ -273,27 +314,33 @@ export function listenForSpeech(options?: {
     try {
       recognition.start();
     } catch {
+      lastListenError = lastListenError || "start-failed";
       finish(null);
     }
   });
 }
 
-let currentAudio: HTMLAudioElement | null = null;
-let speaking = false;
-let speakDone: (() => void) | null = null;
-
-function endSpeak() {
-  speaking = false;
-  const done = speakDone;
-  speakDone = null;
-  done?.();
+function stopAudio() {
+  if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+  const audio = currentAudio;
+  currentAudio = null;
+  if (!audio) return;
+  audio.onended = null;
+  audio.onerror = null;
+  try {
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+  } catch {
+    // already stopped
+  }
 }
 
 export function isSpeaking() {
   return speaking || Boolean(currentAudio && !currentAudio.paused);
 }
 
-async function speakBackend(text: string): Promise<boolean> {
+async function speakBackend(text: string, gen: number): Promise<boolean> {
   const response = await fetch(`${API_URL}/api/tts`, {
     method: "POST",
     headers: {
@@ -302,15 +349,17 @@ async function speakBackend(text: string): Promise<boolean> {
     },
     body: JSON.stringify({ text: text.slice(0, 500) }),
   });
-  if (!response.ok) return false;
+  if (!response.ok || gen !== speakGen) return false;
 
   const blob = await response.blob();
-  if (!blob.size || !speaking) return false;
+  if (!blob.size || gen !== speakGen || !speaking) return false;
 
   const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
+  const audio = sharedAudio ?? new Audio();
+  sharedAudio = audio;
   audio.playbackRate = 1.2;
   currentAudio = audio;
+  audio.src = url;
 
   return new Promise((resolve) => {
     let settled = false;
@@ -319,13 +368,12 @@ async function speakBackend(text: string): Promise<boolean> {
       settled = true;
       URL.revokeObjectURL(url);
       if (currentAudio === audio) currentAudio = null;
+      audio.onended = null;
+      audio.onerror = null;
       resolve(ok);
     };
     audio.onended = () => done(true);
     audio.onerror = () => done(false);
-    audio.onpause = () => {
-      if (!audio.ended) done(true);
-    };
     void audio.play().then(
       () => undefined,
       () => done(false)
@@ -336,59 +384,42 @@ async function speakBackend(text: string): Promise<boolean> {
 export async function speak(text: string): Promise<void> {
   const spoken = text.trim();
   if (!spoken || typeof window === "undefined") return;
-  stopSpeaking();
+  const gen = ++speakGen;
+  stopAudio();
   speaking = true;
-  const finished = new Promise<void>((resolve) => {
-    speakDone = resolve;
-  });
   try {
-    await speakBackend(spoken);
+    if (gen === speakGen) await speakBackend(spoken, gen);
   } catch {
     // Keep a single backend voice; do not fall back to the browser.
   } finally {
-    endSpeak();
+    if (gen === speakGen) speaking = false;
   }
-  await finished;
 }
 
 export async function speakAndListen(
   text: string,
   options?: { onPartial?: (text: string) => void }
 ): Promise<string | null> {
+  await speak(text);
   const denied = await ensureMicrophone();
   if (denied) {
     await speak(denied);
     return null;
   }
 
-  let echoUntil = 0;
-  const stillEchoing = () => isSpeaking() || Date.now() < echoUntil;
-  const listen = listenForSpeech({
+  lastListenError = null;
+  return listenForSpeech({
     idleMs: 12000,
-    pauseMs: 2000,
-    holdWhile: stillEchoing,
-    isNoise: (heard) => looksLikeEcho(heard, text, { strict: stillEchoing() }),
-    onHeard: () => stopSpeaking(),
+    pauseMs: 1800,
     onPartial: options?.onPartial,
   });
-
-  await new Promise((resolve) => window.setTimeout(resolve, 80));
-  await speak(text);
-  echoUntil = Date.now() + 800;
-  const transcript = await listen;
-  if (transcript && looksLikeEcho(transcript, text, { strict: stillEchoing() })) return null;
-  return transcript;
 }
 
 export function stopSpeaking() {
   if (typeof window === "undefined") return;
-  window.speechSynthesis?.cancel();
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.src = "";
-    currentAudio = null;
-  }
-  endSpeak();
+  speakGen += 1;
+  speaking = false;
+  stopAudio();
 }
 
 export function isAffirmative(text: string) {
