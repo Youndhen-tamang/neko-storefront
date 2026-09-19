@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ function TryOnPageInner() {
   const [heightCm, setHeightCm] = useState(165);
   const [weightKg, setWeightKg] = useState(60);
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [session, setSession] = useState<TryOnSession | null>(null);
 
   useEffect(() => {
@@ -118,6 +120,59 @@ function TryOnPageInner() {
     }
   }
 
+  function tryOnFileName() {
+    const slug = (product?.name || "look")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return `try-on-${slug || "look"}.jpg`;
+  }
+
+  function attachmentUrl(url: string, filename: string) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname.includes("cloudinary.com") && parsed.pathname.includes("/upload/")) {
+        const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "-");
+        parsed.pathname = parsed.pathname.replace("/upload/", `/upload/fl_attachment:${safeName}/`);
+        return parsed.toString();
+      }
+    } catch {
+      /* keep original url */
+    }
+    return url;
+  }
+
+  async function downloadResult() {
+    if (!session?.resultUrl) return;
+    const filename = tryOnFileName();
+    setDownloading(true);
+    try {
+      const response = await fetch(session.resultUrl, { mode: "cors" });
+      if (!response.ok) throw new Error("Could not fetch image");
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      toast.success("Try-on image saved");
+    } catch {
+      const link = document.createElement("a");
+      link.href = attachmentUrl(session.resultUrl, filename);
+      link.download = filename;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <ShopShell>
       <div className="max-w-3xl">
@@ -163,11 +218,23 @@ function TryOnPageInner() {
             </div>
           )}
           {session?.resultUrl && (
-            <p className="text-sm text-muted-foreground">
-              Suggested size for this height and weight:{" "}
-              <span className="font-medium text-foreground">{session.sizeHint}</span>. This is a
-              guide, not a fit guarantee.
-            </p>
+            <>
+              <p className="text-sm text-muted-foreground">
+                Suggested size for this height and weight:{" "}
+                <span className="font-medium text-foreground">{session.sizeHint}</span>. This is a
+                guide, not a fit guarantee.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                disabled={downloading}
+                onClick={() => void downloadResult()}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {downloading ? "Saving image..." : "Download look"}
+              </Button>
+            </>
           )}
         </div>
 

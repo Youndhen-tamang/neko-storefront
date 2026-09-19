@@ -139,7 +139,7 @@ export default function EditProductPage() {
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label>Price (USD)</Label>
+            <Label>Price (NPR)</Label>
             <Input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
           </div>
           <div className="space-y-2">

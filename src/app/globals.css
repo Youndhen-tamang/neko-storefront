@@ -57,6 +57,21 @@ textarea {
 a {
   text-underline-offset: 0.2em;
 }
+
+[data-sonner-toaster] {
+  font-family: inherit;
+}
+[data-sonner-toast] {
+  --normal-bg: hsl(var(--card));
+  --normal-border: hsl(var(--border));
+  --normal-text: hsl(var(--foreground));
+  --success-bg: hsl(var(--primary));
+  --success-border: hsl(var(--primary));
+  --success-text: hsl(var(--primary-foreground));
+  --error-bg: hsl(var(--destructive));
+  --error-border: hsl(var(--destructive));
+  --error-text: hsl(var(--destructive-foreground));
+}
 @supports (scrollbar-color: auto) {
   html {
     scrollbar-color: hsl(var(--border)) transparent;

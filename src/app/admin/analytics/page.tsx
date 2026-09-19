@@ -80,7 +80,7 @@ export default function AnalyticsPage() {
       <h1 className="font-serif text-4xl">Analytics</h1>
       <p className="mt-2 text-muted-foreground">Revenue, orders, and catalog performance for this store.</p>
       <form
-        className="mt-6 grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
+        className="mt-6 grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
         onSubmit={(e) => {
           e.preventDefault();
           load();

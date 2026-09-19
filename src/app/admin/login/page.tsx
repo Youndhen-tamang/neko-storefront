@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { api, getAgencySlug, setAdminToken } from "@/lib/api";
 import { storeUrlForSlug } from "@/lib/tenant";
 
@@ -50,7 +52,7 @@ export default function AdminLoginPage() {
   if (!ready) return null;
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-10">
       <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Agency admin</p>
       <h1 className="mt-2 font-serif text-4xl">Sign in</h1>
       <form className="mt-8 space-y-4" onSubmit={onSubmit}>
@@ -71,12 +73,30 @@ export default function AdminLoginPage() {
         {hostSlug && (
           <>
             <div className="space-y-2">
-              <Label>Email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Label htmlFor="admin-email">Email</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
-              <Label>Password</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="admin-password">Password</Label>
+                <Link href="/admin/forgot-password" className="text-xs text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <PasswordInput
+                id="admin-password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
           </>
         )}

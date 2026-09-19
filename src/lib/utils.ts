@@ -5,10 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function money(cents: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
+export const STORE_CURRENCY = "NPR";
+
+export function resolveCurrency(currency?: string | null) {
+  const code = (currency || STORE_CURRENCY).toUpperCase();
+  return code === "USD" ? STORE_CURRENCY : code;
+}
+
+export function money(cents: number, currency = STORE_CURRENCY) {
+  return new Intl.NumberFormat("en-NP", {
     style: "currency",
-    currency,
+    currency: resolveCurrency(currency),
   }).format((cents || 0) / 100);
 }
 

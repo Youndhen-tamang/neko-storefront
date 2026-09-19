@@ -105,6 +105,9 @@ export function MarketplaceLanding({
                   <div className="flex flex-1 flex-col p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{product.category}</p>
                     <h2 className="mt-1 line-clamp-2 text-sm font-medium">{product.name}</h2>
+                    {product.description ? (
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{product.description}</p>
+                    ) : null}
                     <div className="mt-auto flex items-center justify-between pt-3">
                       <div>
                         <p className="font-semibold">{money(product.price_cents)}</p>

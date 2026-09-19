@@ -74,12 +74,12 @@ export function Capabilities() {
               <ol className="space-y-3 text-sm" aria-label="Sample conversation">
                 <Bubble who="Customer">Do you still have the ash stool, and how much is it?</Bubble>
                 <Bubble who="Assistant" reply>
-                  Yes. The ash stool is $180 and there are 6 in stock right now. It's on the Shop page,
+                  Yes. The ash stool is NPR 180 and there are 6 in stock right now. It's on the Shop page,
                   first row.
                 </Bubble>
-                <Bubble who="Customer">Anything in linen under $100?</Bubble>
+                <Bubble who="Customer">Anything in linen under NPR 100?</Bubble>
                 <Bubble who="Assistant" reply>
-                  The linen throw is $96 with 12 in stock. That's the only linen piece published today.
+                  The linen throw is NPR 96 with 12 in stock. That's the only linen piece published today.
                 </Bubble>
               </ol>
               <p className="mt-4 text-xs text-primary-foreground/70">Sample conversation, sample catalog.</p>

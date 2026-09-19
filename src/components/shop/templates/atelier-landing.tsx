@@ -48,7 +48,10 @@ export function AtelierLanding({
                 <div className="space-y-3 p-4">
                   <div>
                     <h2 className="font-serif text-xl">{product.name}</h2>
-                    <p className="text-sm text-muted-foreground">
+                    {product.description ? (
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
+                    ) : null}
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {money(product.price_cents)} · {product.stock} in stock
                     </p>
                   </div>

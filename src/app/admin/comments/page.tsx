@@ -38,7 +38,7 @@ export default function CommentsPage() {
         </p>
       </div>
       <form
-        className="mt-6 flex gap-3 rounded-xl border bg-card p-4"
+        className="mt-6 flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           load();

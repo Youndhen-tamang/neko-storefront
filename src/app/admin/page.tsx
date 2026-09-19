@@ -29,7 +29,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminShell>
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-serif text-4xl">Dashboard</h1>
         <Link href="/admin/comments" className="text-sm text-primary">
           Open comments

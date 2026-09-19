@@ -8,7 +8,7 @@ type Sample = { name: string; price: string; stock: string; art: React.ReactNode
 const SAMPLES: Sample[] = [
   {
     name: "Ash stool",
-    price: "$180",
+    price: "NPR 180",
     stock: "6 in stock",
     art: (
       <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -20,7 +20,7 @@ const SAMPLES: Sample[] = [
   },
   {
     name: "Linen throw",
-    price: "$96",
+    price: "NPR 96",
     stock: "12 in stock",
     art: (
       <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -32,7 +32,7 @@ const SAMPLES: Sample[] = [
   },
   {
     name: "Stoneware carafe",
-    price: "$64",
+    price: "NPR 64",
     stock: "3 in stock",
     art: (
       <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

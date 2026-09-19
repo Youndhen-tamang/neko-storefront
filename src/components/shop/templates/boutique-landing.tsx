@@ -105,6 +105,11 @@ export function BoutiqueLanding({
                           {product.category}
                         </p>
                         <h3 className="font-serif text-2xl">{product.name}</h3>
+                        {product.description ? (
+                          <p className="mt-1 line-clamp-2 max-w-lg text-sm text-muted-foreground">
+                            {product.description}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="text-right">
                         <p className="text-sm">{money(product.price_cents)}</p>
@@ -139,7 +144,9 @@ export function BoutiqueLanding({
                         </Link>
                         <div>
                           <h3 className="font-serif text-xl">{product.name}</h3>
-                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
+                          {product.description ? (
+                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-4">
                           <p>{money(product.price_cents)}</p>

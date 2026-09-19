@@ -2,7 +2,7 @@
 
 import { jsPDF } from "jspdf";
 import { Branding, Order } from "@/lib/api";
-import { money } from "@/lib/utils";
+import { money, resolveCurrency } from "@/lib/utils";
 
 const PAGE_W = 210;
 const PAGE_H = 297;
@@ -88,7 +88,7 @@ export async function downloadOrderReceipt(order: Order, branding: Branding | nu
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const brand = branding?.brandName || branding?.name || "Store";
   const accent = hexToRgb(branding?.primaryColor || "#1f6b4a");
-  const currency = (order.currency || "usd").toUpperCase();
+  const currency = resolveCurrency(order.currency);
   const subtotal = order.subtotal_cents ?? order.total_cents;
   const logo = await loadLogo(branding?.logoUrl);
 
