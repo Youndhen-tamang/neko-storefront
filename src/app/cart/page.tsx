@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Lock, MapPin, ShoppingBag, Trash2 } from "lucide-react";
+import { Banknote, CreditCard, Lock, MapPin, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EsewaButton } from "@/components/shop/esewa-button";
@@ -21,7 +21,7 @@ export default function CartPage() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<"stripe" | "cod" | "esewa" | undefined>(undefined);
 
   function refresh() {
     setItems(getCart(getAgencySlug()));
@@ -54,7 +54,7 @@ export default function CartPage() {
 
   async function checkout(method: "stripe" | "cod") {
     if (!validateCustomer()) return;
-    setLoading(true);
+    setLoading(method);
     try {
       const payload = {
         customerName,
@@ -79,7 +79,7 @@ export default function CartPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Checkout failed");
     } finally {
-      setLoading(false);
+      setLoading(undefined);
     }
   }
 
@@ -242,23 +242,33 @@ export default function CartPage() {
 
               <div className="grid gap-2">
                 <Button
-                  className="w-full"
+                  className="w-full gap-2.5"
                   size="lg"
                   type="button"
-                  disabled={loading}
+                  disabled={loading === "cod"}
                   onClick={() => void checkout("cod")}
                 >
-                  {loading ? "Placing order..." : `Cash on delivery · ${money(total)}`}
+                  <Banknote className="h-6 w-6 shrink-0" />
+                  {loading === "cod" ? "Placing order..." : `Cash on delivery`}
                 </Button>
+                {/* Divider */}
+  <div className="relative flex items-center py-1">
+    <div className="flex-1 border-t" />
+    <span className="mx-3 text-xs font-medium text-muted-foreground">
+      OR
+    </span>
+    <div className="flex-1 border-t" />
+  </div>
                 <Button
-                  className="w-full"
+                  className="w-full gap-2.5 bg-[#6057F7] text-white hover:bg-[#6057F7]/90 hover:text-white"
                   size="lg"
                   type="button"
                   variant="outline"
-                  disabled={loading}
+                  disabled={loading === "stripe"}
                   onClick={() => void checkout("stripe")}
                 >
-                  {loading ? "Redirecting to Stripe..." : `Pay ${money(total)} with Stripe`}
+                  <CreditCard className="h-6 w-6 shrink-0" />
+                  {loading === "stripe" ? "Redirecting to Stripe..." : `Pay with Stripe`}
                 </Button>
                 <EsewaButton
                   payload={{
@@ -268,12 +278,12 @@ export default function CartPage() {
                     shippingAddress,
                     items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
                   }}
-                  label={`Pay ${money(total)} with eSewa`}
-                  disabled={loading}
+                  disabled={loading === "esewa"}
                   validate={validateCustomer}
                   onError={(message) => toast.error(message)}
                 />
               </div>
+     
               <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
                 <Lock className="h-3 w-3" />
                 Stripe and eSewa open a secure page where you complete the payment yourself. Cash on delivery is paid when the order arrives.

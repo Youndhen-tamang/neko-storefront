@@ -893,7 +893,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
           </form>
         </div>
       )}
-      <Button
+{ !open &&     <Button
         className="rounded-full px-4"
         aria-expanded={open}
         aria-controls="store-assistant"
@@ -904,8 +904,8 @@ export function ChatWidget({ brandName }: { brandName: string }) {
         }}
       >
         <MessageCircle className="h-4 w-4" />
-        Ask shop
-      </Button>
+        Ask shop 
+      </Button>}
       </div>
     </>
   );

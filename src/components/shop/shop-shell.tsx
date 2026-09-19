@@ -185,9 +185,9 @@ export function ShopShell({
             >
               <Link href="/">Shop</Link>
               <Link href="/try-on">Try on</Link>
-              <button type="button" onClick={() => openStoreChat()}>
+              {/* <button type="button" onClick={() => openStoreChat()}>
                 Ask shop
-              </button>
+              </button> */}
               <button
                 type="button"
                 onClick={() => openCartDrawer()}

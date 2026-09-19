@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { STORE_PUBLIC_DOMAIN } from "@/lib/tenant";
 
-const SUPER_ADMIN_URL = process.env.NEXT_PUBLIC_SUPER_ADMIN_URL || "http://localhost:3004";
+const SUPER_ADMIN_URL = "https://neko-superadmin.vercel.app/super-admin/login";
 
 if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_SUPER_ADMIN_URL) {
   console.error("NEXT_PUBLIC_SUPER_ADMIN_URL is not set; the landing page links to http://localhost:3004 in production.");

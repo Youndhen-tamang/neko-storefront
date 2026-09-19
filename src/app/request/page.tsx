@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { slugify } from "@/lib/slug";
+import { ArrowLeft } from "lucide-react";
 
 const emptyForm = {
   name: "",
@@ -50,7 +51,15 @@ export default function TenantRequestPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-12">
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6 py-12">
+      <div className="my-4">
+        <Link href="/">
+        <Button variant="outline">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Homepage
+        </Button>
+        </Link>
+      </div>
       <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Agency onboarding</p>
       <h1 className="mt-3 text-3xl font-medium sm:text-4xl">Request a tenant</h1>
       <p className="mt-2 text-sm text-muted-foreground">
@@ -79,6 +88,8 @@ export default function TenantRequestPage() {
           }
         }}
       >
+                <div className="grid gap-4 sm:grid-cols-2">
+
         <div className="space-y-2">
           <Label htmlFor="name">Agency name</Label>
           <Input
@@ -107,6 +118,8 @@ export default function TenantRequestPage() {
             required
           />
         </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="brandName">Brand name</Label>
           <Input id="brandName" value={form.brandName} onChange={(e) => set("brandName", e.target.value)} />
@@ -114,6 +127,7 @@ export default function TenantRequestPage() {
         <div className="space-y-2">
           <Label htmlFor="tagline">Tagline</Label>
           <Input id="tagline" value={form.tagline} onChange={(e) => set("tagline", e.target.value)} />
+        </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

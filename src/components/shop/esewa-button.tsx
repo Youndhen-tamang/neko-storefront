@@ -31,15 +31,26 @@ export function submitEsewaForm(form: EsewaForm) {
   el.submit();
 }
 
+function EsewaIcon() {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/esewa-logo.png"
+      alt=""
+      width={24}
+      height={24}
+      className="h-6 w-6 shrink-0 rounded-full bg-white"
+    />
+  );
+}
+
 export function EsewaButton({
   payload,
-  label,
   disabled,
   validate,
   onError,
 }: {
   payload: EsewaCheckoutPayload;
-  label: string;
   disabled?: boolean;
   /** Return false to abort (after showing your own message). */
   validate?: () => boolean;
@@ -64,13 +75,14 @@ export function EsewaButton({
 
   return (
     <Button
-      className="w-full bg-[#60bb46] text-white hover:bg-[#4ea338]"
+      className="w-full gap-2.5 bg-[#60bb46] text-white hover:bg-[#4ea338]"
       size="lg"
       type="button"
       disabled={disabled || loading}
       onClick={() => void pay()}
     >
-      {loading ? "Redirecting to eSewa..." : label}
+      <EsewaIcon />
+      {loading ? "Redirecting to eSewa..." : "Pay with eSewa"}
     </Button>
   );
 }

@@ -172,9 +172,9 @@ export function StorePreview({
         <nav className="flex items-center gap-3 text-[11px] text-muted-foreground" aria-hidden="true">
           <span className="text-foreground">Shop</span>
           {isLumina ? <span>Try on</span> : null}
-          <span className="inline-flex items-center gap-1">
+          {/* <span className="inline-flex items-center gap-1">
             <Mic className="h-3 w-3" /> {isLumina ? "Ask shop" : "Voice"}
-          </span>
+          </span> */}
           <span className="inline-flex items-center gap-1">
             <ShoppingBag className="h-3 w-3" /> 0
           </span>
@@ -202,7 +202,7 @@ export function StorePreview({
                   className="block rounded-md py-1 text-center text-[10px] font-medium text-white transition-colors duration-500"
                   style={{ backgroundColor: "var(--brand)" }}
                 >
-                  {item.stock === "Sold out" ? "Sold out" : "Add to cart"}
+                  { "Add to cart"}
                 </span>
               </div>
             </li>
@@ -218,13 +218,13 @@ function PreviewChat({ brandName }: { brandName: string }) {
   return (
     <div className="pointer-events-none absolute inset-x-2 bottom-2 sm:inset-x-3 sm:bottom-3" aria-hidden="true">
       <div className="relative ml-auto w-[min(100%,19.5rem)]">
-        <span
+        {/* <span
           className="absolute -left-[4.25rem] bottom-2 z-10 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-medium text-white shadow-sm"
           style={{ backgroundColor: "var(--brand)" }}
         >
           <MessageCircle className="h-3 w-3" />
           Ask shop
-        </span>
+        </span> */}
         <div className="relative z-10 overflow-hidden rounded-2xl border bg-card shadow-[0_16px_36px_-18px_hsl(var(--ink)/0.55)]">
         <div className="flex items-start justify-between gap-2 border-b px-3 py-2">
           <div>

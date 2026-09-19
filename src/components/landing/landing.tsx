@@ -26,9 +26,9 @@ export function Landing() {
             <a href="#included" className="link-quiet">
               What's included
             </a>
-            <Link href="/request" className="link-quiet">
+            {/* <Link href="/request" className="link-quiet">
               Request a store
-            </Link>
+            </Link> */}
           </nav>
           <div className="flex items-center gap-2">
             <Link
