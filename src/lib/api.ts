@@ -105,6 +105,7 @@ export type Order = {
   total_cents: number;
   currency?: string;
   email_sent?: boolean;
+  payment_method?: string;
   created_at: string;
   items: {
     name: string;

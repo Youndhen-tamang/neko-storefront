@@ -43,18 +43,31 @@ export default function CartPage() {
     setItems(removeFromCart(getAgencySlug(), productId));
   }
 
-  async function checkout() {
+  async function checkout(method: "stripe" | "cod") {
+    if (!customerName.trim() || !customerEmail.trim() || !shippingAddress.trim()) {
+      toast.error("Please add your name, email, and shipping location.");
+      return;
+    }
     setLoading(true);
     try {
+      const payload = {
+        customerName,
+        customerEmail,
+        customerPhone,
+        shippingAddress,
+        items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+      };
+      if (method === "cod") {
+        const data = await api<{ order: { id: string } }>("/api/orders/cod", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        window.location.href = `/checkout/success?order_id=${data.order.id}`;
+        return;
+      }
       const data = await api<{ checkoutUrl: string }>("/api/orders/checkout", {
         method: "POST",
-        body: JSON.stringify({
-          customerName,
-          customerEmail,
-          customerPhone,
-          shippingAddress,
-          items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
-        }),
+        body: JSON.stringify(payload),
       });
       window.location.href = data.checkoutUrl;
     } catch (error) {
@@ -150,7 +163,6 @@ export default function CartPage() {
               className="space-y-6 rounded-2xl border bg-card p-6 shadow-sm"
               onSubmit={(e) => {
                 e.preventDefault();
-                void checkout();
               }}
             >
               <div>
@@ -222,12 +234,30 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <Button className="w-full" size="lg" type="submit" disabled={loading}>
-                {loading ? "Redirecting to Stripe..." : `Pay ${money(total)} with Stripe`}
-              </Button>
+              <div className="grid gap-2">
+                <Button
+                  className="w-full"
+                  size="lg"
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void checkout("cod")}
+                >
+                  {loading ? "Placing order..." : `Cash on delivery · ${money(total)}`}
+                </Button>
+                <Button
+                  className="w-full"
+                  size="lg"
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={() => void checkout("stripe")}
+                >
+                  {loading ? "Redirecting to Stripe..." : `Pay ${money(total)} with Stripe`}
+                </Button>
+              </div>
               <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
                 <Lock className="h-3 w-3" />
-                Secure checkout via Stripe. You will confirm payment on the next page.
+                Stripe opens a page where you type card details yourself. Cash on delivery is paid when the order arrives.
               </p>
             </form>
           </aside>

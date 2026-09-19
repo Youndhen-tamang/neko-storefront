@@ -18,7 +18,10 @@ type SpeechRecognitionLike = {
   interimResults: boolean;
   continuous: boolean;
   maxAlternatives?: number;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> }) => void) | null;
+  onresult: ((event: {
+    resultIndex?: number;
+    results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }>;
+  }) => void) | null;
   onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
@@ -26,9 +29,17 @@ type SpeechRecognitionLike = {
 };
 
 let listenSession = 0;
+let activeRecognition: SpeechRecognitionLike | null = null;
 
 export function cancelListening() {
   listenSession += 1;
+  const current = activeRecognition;
+  activeRecognition = null;
+  try {
+    current?.stop();
+  } catch {
+    // already stopped
+  }
 }
 
 export async function ensureMicrophone(): Promise<string | null> {
@@ -53,24 +64,93 @@ function RecognitionCtor() {
 }
 
 export function speechSupported() {
-  return typeof window !== "undefined" && Boolean(RecognitionCtor() && window.speechSynthesis);
+  return typeof window !== "undefined" && Boolean(RecognitionCtor());
 }
 
 export function listenOnce(onPartial?: (text: string) => void): Promise<string> {
-  return listenForSpeech({ idleMs: 12000, pauseMs: 1800, onPartial }).then((text) => {
+  return listenForSpeech({ idleMs: 12000, pauseMs: 2000, onPartial }).then((text) => {
     if (!text) throw new Error("I couldn't hear that. Tap the microphone and try again.");
     return text;
   });
+}
+
+function normalizeHeard(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\bma\s*a?m\b/g, "mam")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const CHOICE_WORDS: Record<string, string> = {
+  "1": "1",
+  one: "1",
+  won: "1",
+  "2": "2",
+  two: "2",
+  too: "2",
+  "3": "3",
+  three: "3",
+  tree: "3",
+  "4": "4",
+  four: "4",
+  "5": "5",
+  five: "5",
+};
+
+export function extractSpokenChoice(text: string): string | null {
+  const tokens = normalizeHeard(text).split(" ").filter(Boolean);
+  if (!tokens.length) return null;
+  const mapped = tokens.map((token) => CHOICE_WORDS[token]).filter(Boolean);
+  if (mapped.length && mapped.length === tokens.length) return mapped[mapped.length - 1];
+  if (/^(say|number|option|the)$/.test(tokens[0]) && mapped.length === tokens.length - 1 && mapped.length) {
+    return mapped[mapped.length - 1];
+  }
+  return null;
+}
+
+export function looksLikeEcho(transcript: string, spoken: string, opts?: { strict?: boolean }) {
+  const heard = normalizeHeard(transcript);
+  const source = normalizeHeard(spoken);
+  if (!heard) return true;
+  if (!source) return false;
+
+  const bareChoice = Boolean(extractSpokenChoice(heard) && heard.split(" ").length <= 2 && !/^yes|ok/.test(heard));
+  if (bareChoice) return false;
+
+  if (/^yes mam$/.test(heard) && source.includes("yes mam")) return true;
+  if (source.startsWith(heard) && heard.split(" ").length >= 2) return true;
+  if (opts?.strict && source.startsWith(heard)) return true;
+  if (heard.length >= 12 && source.includes(heard)) return true;
+  return false;
+}
+
+function resultTranscript(result: ArrayLike<{ transcript: string }> | undefined) {
+  return result?.[0]?.transcript?.trim() || "";
+}
+
+function joinHeard(...parts: string[]) {
+  return parts
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function listenForSpeech(options?: {
   idleMs?: number;
   speechMs?: number;
   pauseMs?: number;
+  holdWhile?: () => boolean;
+  isNoise?: (text: string) => boolean;
+  onHeard?: (text: string) => void;
   onPartial?: (text: string) => void;
 }): Promise<string | null> {
   const idleMs = options?.idleMs ?? 12000;
-  const pauseMs = options?.pauseMs ?? options?.speechMs ?? 1800;
+  const pauseMs = options?.pauseMs ?? options?.speechMs ?? 2000;
 
   return new Promise((resolve) => {
     const Ctor = RecognitionCtor();
@@ -85,18 +165,21 @@ export function listenForSpeech(options?: {
     recognition.interimResults = true;
     recognition.continuous = true;
     recognition.maxAlternatives = 1;
+    activeRecognition = recognition;
 
     let settled = false;
+    const finals: string[] = [];
     let spoken = "";
+    let keepUntil = 0;
     let idleTimer: number | undefined;
     let pauseTimer: number | undefined;
-    const deadline = Date.now() + idleMs;
 
     function finish(value: string | null) {
       if (settled) return;
       settled = true;
       window.clearTimeout(idleTimer);
       window.clearTimeout(pauseTimer);
+      if (activeRecognition === recognition) activeRecognition = null;
       try {
         recognition.stop();
       } catch {
@@ -105,21 +188,54 @@ export function listenForSpeech(options?: {
       resolve(session === listenSession ? value?.trim() || null : null);
     }
 
+    function stillWaiting() {
+      return Boolean(options?.holdWhile?.()) || keepUntil === 0 || Date.now() < keepUntil;
+    }
+
     function armIdle() {
       window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => finish(spoken || null), Math.max(250, deadline - Date.now()));
+      if (options?.holdWhile?.()) {
+        keepUntil = 0;
+        idleTimer = window.setTimeout(armIdle, 400);
+        return;
+      }
+      if (!keepUntil) keepUntil = Date.now() + idleMs;
+      idleTimer = window.setTimeout(() => finish(spoken || null), Math.max(250, keepUntil - Date.now()));
+    }
+
+    function skipPiece(piece: string) {
+      const speaking = Boolean(options?.holdWhile?.());
+      if (!speaking) return false;
+      const promptEcho = /^say\b/i.test(normalizeHeard(piece)) && piece.split(/\s+/).length > 2;
+      return promptEcho || Boolean(options?.isNoise?.(piece));
     }
 
     recognition.onresult = (event) => {
       if (session !== listenSession) return;
-      spoken = Array.from(event.results)
-        .map((result) => result[0]?.transcript || "")
-        .join(" ")
-        .trim();
-      if (!spoken) return;
+      const start = event.resultIndex ?? 0;
+      const interims: string[] = [];
+      for (let i = start; i < event.results.length; i++) {
+        const piece = resultTranscript(event.results[i]);
+        if (!piece || skipPiece(piece)) continue;
+        if (event.results[i].isFinal) {
+          if (finals[finals.length - 1] !== piece) finals.push(piece);
+        } else {
+          interims.push(piece);
+        }
+      }
+      const heard = joinHeard(...finals, ...interims);
+      if (!heard) return;
+
+      const choice = extractSpokenChoice(heard);
+      spoken = choice ?? heard;
+      options?.onHeard?.(spoken);
       options?.onPartial?.(spoken);
       window.clearTimeout(idleTimer);
       window.clearTimeout(pauseTimer);
+      if (choice) {
+        finish(choice);
+        return;
+      }
       pauseTimer = window.setTimeout(() => finish(spoken), pauseMs);
     };
 
@@ -129,21 +245,28 @@ export function listenForSpeech(options?: {
     };
 
     recognition.onend = () => {
-      if (settled || session !== listenSession) return;
-      if (spoken.trim()) {
-        finish(spoken);
+      if (settled) return;
+      if (session !== listenSession) {
+        finish(null);
         return;
       }
-      if (Date.now() < deadline) {
+      if (stillWaiting() || spoken) {
         try {
           recognition.start();
           return;
         } catch {
-          finish(null);
-          return;
+          window.setTimeout(() => {
+            if (settled || session !== listenSession) return;
+            try {
+              recognition.start();
+            } catch {
+              finish(spoken || null);
+            }
+          }, 250);
         }
+        return;
       }
-      finish(null);
+      finish(spoken || null);
     };
 
     armIdle();
@@ -155,109 +278,22 @@ export function listenForSpeech(options?: {
   });
 }
 
-const FEMALE_NAMES = [
-  "samantha",
-  "victoria",
-  "karen",
-  "moira",
-  "fiona",
-  "tessa",
-  "zira",
-  "susan",
-  "linda",
-  "heera",
-  "hazel",
-  "serena",
-  "kate",
-  "nicky",
-  "siri",
-  "flo",
-  "jane",
-  "allison",
-  "ava",
-  "susan",
-];
-
-const MALE_NAMES = [
-  "alex",
-  "daniel",
-  "fred",
-  "tom",
-  "david",
-  "mark",
-  "george",
-  "james",
-  "oliver",
-  "ralph",
-  "bruce",
-  "aaron",
-  "albert",
-  "junior",
-  "rishi",
-  "thomas",
-];
-
-function voicesReady(): Promise<SpeechSynthesisVoice[]> {
-  const existing = window.speechSynthesis.getVoices();
-  if (existing.length) return Promise.resolve(existing);
-  return new Promise((resolve) => {
-    const finish = () => resolve(window.speechSynthesis.getVoices());
-    window.speechSynthesis.addEventListener("voiceschanged", finish, { once: true });
-    window.setTimeout(finish, 400);
-  });
-}
-
-function pickFemaleVoice(voices: SpeechSynthesisVoice[]) {
-  const english = voices.filter((voice) => voice.lang.toLowerCase().startsWith("en"));
-  const pool = english.length ? english : voices;
-
-  const scored = pool
-    .map((voice) => {
-      const name = voice.name.toLowerCase();
-      let score = 0;
-      if (FEMALE_NAMES.some((item) => name.includes(item))) score += 6;
-      if (/\bfemale\b|\bwoman\b/.test(name)) score += 8;
-      if (voice.lang.toLowerCase().startsWith("en-us")) score += 2;
-      if (voice.localService) score += 1;
-      if (MALE_NAMES.some((item) => name.includes(item)) || /\bmale\b|\bman\b/.test(name)) score -= 10;
-      return { voice, score };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  return scored.find((item) => item.score > 0)?.voice ?? null;
-}
-
 let currentAudio: HTMLAudioElement | null = null;
+let speaking = false;
+let speakDone: (() => void) | null = null;
 
-function speakBrowser(text: string): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined" || !window.speechSynthesis || !text.trim()) {
-      resolve();
-      return;
-    }
-
-    void voicesReady().then((voices) => {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voice = pickFemaleVoice(voices);
-      if (voice) {
-        utterance.voice = voice;
-        utterance.lang = voice.lang;
-        utterance.pitch = 1.05;
-      } else {
-        utterance.lang = "en-US";
-        utterance.pitch = 1.25;
-      }
-      utterance.rate = 0.98;
-      utterance.volume = 1;
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-      window.speechSynthesis.speak(utterance);
-    });
-  });
+function endSpeak() {
+  speaking = false;
+  const done = speakDone;
+  speakDone = null;
+  done?.();
 }
 
-async function speakElevenLabs(text: string): Promise<boolean> {
+export function isSpeaking() {
+  return speaking || Boolean(currentAudio && !currentAudio.paused);
+}
+
+async function speakBackend(text: string): Promise<boolean> {
   const response = await fetch(`${API_URL}/api/tts`, {
     method: "POST",
     headers: {
@@ -269,27 +305,30 @@ async function speakElevenLabs(text: string): Promise<boolean> {
   if (!response.ok) return false;
 
   const blob = await response.blob();
-  if (!blob.size) return false;
+  if (!blob.size || !speaking) return false;
 
-  stopSpeaking();
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
+  audio.playbackRate = 1.2;
   currentAudio = audio;
 
   return new Promise((resolve) => {
-    audio.onended = () => {
+    let settled = false;
+    const done = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
       URL.revokeObjectURL(url);
       if (currentAudio === audio) currentAudio = null;
-      resolve(true);
+      resolve(ok);
     };
-    audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      if (currentAudio === audio) currentAudio = null;
-      resolve(false);
+    audio.onended = () => done(true);
+    audio.onerror = () => done(false);
+    audio.onpause = () => {
+      if (!audio.ended) done(true);
     };
     void audio.play().then(
       () => undefined,
-      () => resolve(false)
+      () => done(false)
     );
   });
 }
@@ -297,12 +336,48 @@ async function speakElevenLabs(text: string): Promise<boolean> {
 export async function speak(text: string): Promise<void> {
   const spoken = text.trim();
   if (!spoken || typeof window === "undefined") return;
+  stopSpeaking();
+  speaking = true;
+  const finished = new Promise<void>((resolve) => {
+    speakDone = resolve;
+  });
   try {
-    if (await speakElevenLabs(spoken)) return;
+    await speakBackend(spoken);
   } catch {
-    // Use the browser voice if ElevenLabs is unset or failing.
+    // Keep a single backend voice; do not fall back to the browser.
+  } finally {
+    endSpeak();
   }
-  await speakBrowser(spoken);
+  await finished;
+}
+
+export async function speakAndListen(
+  text: string,
+  options?: { onPartial?: (text: string) => void }
+): Promise<string | null> {
+  const denied = await ensureMicrophone();
+  if (denied) {
+    await speak(denied);
+    return null;
+  }
+
+  let echoUntil = 0;
+  const stillEchoing = () => isSpeaking() || Date.now() < echoUntil;
+  const listen = listenForSpeech({
+    idleMs: 12000,
+    pauseMs: 2000,
+    holdWhile: stillEchoing,
+    isNoise: (heard) => looksLikeEcho(heard, text, { strict: stillEchoing() }),
+    onHeard: () => stopSpeaking(),
+    onPartial: options?.onPartial,
+  });
+
+  await new Promise((resolve) => window.setTimeout(resolve, 80));
+  await speak(text);
+  echoUntil = Date.now() + 800;
+  const transcript = await listen;
+  if (transcript && looksLikeEcho(transcript, text, { strict: stillEchoing() })) return null;
+  return transcript;
 }
 
 export function stopSpeaking() {
@@ -313,6 +388,7 @@ export function stopSpeaking() {
     currentAudio.src = "";
     currentAudio = null;
   }
+  endSpeak();
 }
 
 export function isAffirmative(text: string) {

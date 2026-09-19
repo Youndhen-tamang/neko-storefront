@@ -12,11 +12,14 @@ import { downloadOrderReceipt } from "@/lib/receipt-pdf";
 import { offerReceipt } from "@/lib/speech";
 import { cn, money } from "@/lib/utils";
 
-const STEPS = [
+function paymentSteps(cod: boolean) {
+  return [
   {
     id: "paid",
-    title: "Payment received",
-    body: "Stripe confirmed this order. Your invoice is locked in and the atelier has the brief.",
+    title: cod ? "Order placed" : "Payment received",
+    body: cod
+      ? "Pay cash when the order arrives. Your invoice is locked in and the atelier has the brief."
+      : "Stripe confirmed this order. Your invoice is locked in and the atelier has the brief.",
     icon: Check,
   },
   {
@@ -38,6 +41,7 @@ const STEPS = [
     icon: Sparkles,
   },
 ] as const;
+}
 
 function firstName(name: string) {
   return name.trim().split(/\s+/)[0] || "there";
@@ -204,7 +208,8 @@ export function OrderConfirmed({
           className="mx-auto mt-4 max-w-lg text-muted-foreground animate-success-fade-up"
           style={{ animationDelay: "160ms" }}
         >
-          {branding?.brandName || "The studio"} has your order. A receipt is on its way to{" "}
+          {branding?.brandName || "The studio"} has your order
+          {order.payment_method === "cod" ? ". Pay cash when it arrives. A receipt is on its way to " : ". A receipt is on its way to "}
           <span className="text-foreground">{order.customer_email}</span>
           {order.email_sent ? "." : " once email is configured."}
         </p>
@@ -323,7 +328,7 @@ export function OrderConfirmed({
             <h2 className="font-serif text-2xl">What happens next</h2>
             <p className="mt-1 text-sm text-muted-foreground">Open a step to see the plan for this order.</p>
             <ol className="mt-5 space-y-2">
-              {STEPS.map((step, index) => {
+              {paymentSteps(order.payment_method === "cod").map((step, index) => {
                 const Icon = step.icon;
                 const done = index < active;
                 const current = index === active;

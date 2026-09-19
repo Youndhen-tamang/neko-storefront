@@ -10,25 +10,29 @@ import { saveCart } from "@/lib/cart";
 function SuccessInner() {
   const params = useSearchParams();
   const sessionId = params.get("session_id");
+  const orderId = params.get("order_id");
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(Boolean(sessionId));
+  const [loading, setLoading] = useState(Boolean(sessionId || orderId));
 
   useEffect(() => {
-    if (!sessionId) {
+    if (!sessionId && !orderId) {
       setLoading(false);
       setError("Missing payment session.");
       return;
     }
     saveCart(getAgencySlug(), []);
-    api<{ order: Order }>("/api/orders/confirm", {
-      method: "POST",
-      body: JSON.stringify({ sessionId }),
-    })
+    const request = orderId
+      ? api<{ order: Order }>(`/api/orders/placed/${orderId}`)
+      : api<{ order: Order }>("/api/orders/confirm", {
+          method: "POST",
+          body: JSON.stringify({ sessionId }),
+        });
+    request
       .then((data) => setOrder(data.order))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [sessionId]);
+  }, [sessionId, orderId]);
 
   return (
     <ShopShell>

@@ -19,7 +19,9 @@ import {
   isNegative,
   listenForSpeech,
   listenOnce,
+  looksLikeEcho,
   speak,
+  speakAndListen,
   speechSupported,
   stopSpeaking,
 } from "@/lib/speech";
@@ -46,7 +48,7 @@ type ChatResponse = {
   answer: string;
   checkoutUrl?: string;
   checkoutSessionId?: string;
-  order?: { invoice_number: string };
+  order?: Order;
   products?: ProductLink[];
   pendingCheckout?: PendingCheckout;
 };
@@ -275,7 +277,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     openedPay.current = url;
     void (async () => {
       await actOnBehalf(
-        "I'm opening the Stripe payment page on your behalf. Use Apple Pay, Google Pay, Link, or a card. I never ask for your card number here."
+        "I'm opening Stripe on your behalf. You must type your card details yourself, or use Apple Pay, Google Pay, or Link. I cannot enter card numbers for you."
       );
       window.location.href = url;
     })();
@@ -375,41 +377,38 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     if (allowSpeak) void speak(text);
   }
 
-  async function listenAfterAssistant() {
-    if (!speechSupported() || loading) return;
+  async function speakThenHear(text: string) {
+    if (!speechSupported() || !text.trim()) return;
     const gen = ++listenGen.current;
-    stopSpeaking();
-    await new Promise((resolve) => window.setTimeout(resolve, 350));
-    if (gen !== listenGen.current) return;
-
-    const denied = await ensureMicrophone();
-    if (gen !== listenGen.current) return;
-    if (denied) {
-      setLiveText(denied);
-      await speak(denied);
-      return;
-    }
-
     setListening(true);
-    setLiveText("I'm listening. Please speak.");
-    const transcript = await listenForSpeech({
-      idleMs: 12000,
-      pauseMs: 1800,
-      onPartial: (text) => {
-        if (gen === listenGen.current) setInput(text);
+    setLiveText("Speaking. You can interrupt anytime.");
+    const transcript = await speakAndListen(text, {
+      onPartial: (heard) => {
+        if (gen === listenGen.current) setInput(heard);
       },
     });
     if (gen !== listenGen.current) return;
+    let heard = transcript && looksLikeEcho(transcript, text, { strict: true }) ? null : transcript;
+    while (!heard && gen === listenGen.current) {
+      setListening(true);
+      setLiveText("I'm listening. Please speak.");
+      const next = await listenForSpeech({
+        idleMs: 20000,
+        pauseMs: 2000,
+        onPartial: (value) => {
+          if (gen === listenGen.current) setInput(value);
+        },
+      });
+      if (gen !== listenGen.current) return;
+      heard = next && looksLikeEcho(next, text) ? null : next;
+    }
+    if (gen !== listenGen.current) return;
     setListening(false);
-    if (transcript) {
+    if (heard) {
       setVoiceOn(true);
       localStorage.setItem(VOICE_KEY, "on");
-      await send(transcript);
-      return;
+      await send(heard);
     }
-    const note = "I didn't catch that. Tap the microphone and speak again.";
-    setLiveText(note);
-    await speak(note);
   }
 
   async function acceptWelcome() {
@@ -420,8 +419,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     const hello = greeting(brandName);
     setMessages([hello]);
     await actOnBehalf("I'm opening the shop assistant on your behalf.");
-    await speak(hello.content);
-    await listenAfterAssistant();
+    await speakThenHear(hello.content);
   }
 
   function dismissWelcome() {
@@ -489,12 +487,16 @@ export function ChatWidget({ brandName }: { brandName: string }) {
       };
       setMessages([...history, assistant]);
       setLoading(false);
+      if (data.order?.id) {
+        window.location.href = `/checkout/success?order_id=${data.order.id}`;
+        return;
+      }
       const spokenReply = displayMessage(assistant).text;
       announce(spokenReply, false);
-      await speak(spokenReply);
-      if (epoch !== chatEpoch.current) return;
       if (!data.checkoutUrl && speechSupported()) {
-        await listenAfterAssistant();
+        await speakThenHear(spokenReply);
+      } else {
+        await speak(spokenReply);
       }
     } catch (error) {
       if (epoch !== chatEpoch.current) return;
@@ -506,8 +508,20 @@ export function ChatWidget({ brandName }: { brandName: string }) {
     }
   }
 
+  function stopListeningToType() {
+    if (!listening) return;
+    listenGen.current += 1;
+    cancelListening();
+    setListening(false);
+    setLiveText("Listening stopped. You can type or send your message.");
+  }
+
   async function startListening() {
     if (loading) return;
+    if (listening) {
+      stopListeningToType();
+      return;
+    }
     const gen = ++listenGen.current;
     cancelListening();
     stopSpeaking();
@@ -657,13 +671,26 @@ export function ChatWidget({ brandName }: { brandName: string }) {
                         type="button"
                         className="w-full"
                         onClick={() => {
-                          void actOnBehalf("I'm placing the order on your behalf.");
-                          void send("place order");
+                          void actOnBehalf("I'm placing this as cash on delivery.");
+                          void send("cash on delivery");
                         }}
                       >
-                        Place order
+                        Cash on delivery
                       </Button>
-                      <Button type="button" variant="outline" className="w-full" onClick={() => void send("change")}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          void actOnBehalf(
+                            "I'm opening Stripe. You will need to type your card details yourself. I cannot enter them for you."
+                          );
+                          void send("stripe");
+                        }}
+                      >
+                        Pay with Stripe
+                      </Button>
+                      <Button type="button" variant="ghost" className="w-full" onClick={() => void send("change")}>
                         Change details
                       </Button>
                     </div>
@@ -677,7 +704,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
                         Pay on Stripe
                       </a>
                       <p className="text-xs text-muted-foreground">
-                        I open this page for you. Use Apple Pay, Google Pay, Link, or a card.
+                        You type card details on Stripe yourself. I cannot enter them for you.
                       </p>
                     </div>
                   )}
@@ -685,7 +712,9 @@ export function ChatWidget({ brandName }: { brandName: string }) {
               );
             })}
             {loading && <p className="text-xs text-muted-foreground">Answering your question...</p>}
-            {listening && <p className="text-xs text-muted-foreground">Listening… speak when you are ready.</p>}
+            {listening && (
+              <p className="text-xs text-muted-foreground">Listening… you can speak even while I am reading.</p>
+            )}
           </div>
           <form
             className="space-y-2 border-t p-3"
@@ -696,7 +725,7 @@ export function ChatWidget({ brandName }: { brandName: string }) {
           >
             {pending && (
               <p className="text-xs text-muted-foreground">
-                Order is ready to confirm. Say place order, or I can tap it for you.
+                Say cash on delivery, or say Stripe. If you choose Stripe, you type the card yourself.
               </p>
             )}
             <div className="flex gap-2">
@@ -707,7 +736,10 @@ export function ChatWidget({ brandName }: { brandName: string }) {
                 id="store-assistant-input"
                 ref={inputRef}
                 value={input}
-                onChange={(event) => setInput(event.target.value)}
+                onChange={(event) => {
+                  stopListeningToType();
+                  setInput(event.target.value);
+                }}
                 placeholder="Ask anything, or say what you'd like to order"
                 autoComplete="off"
               />
@@ -716,9 +748,8 @@ export function ChatWidget({ brandName }: { brandName: string }) {
                   type="button"
                   variant={listening ? "default" : "outline"}
                   size="icon"
-                  aria-label={listening ? "Listening" : "Speak your message"}
+                  aria-label={listening ? "Stop listening" : "Speak your message"}
                   aria-pressed={listening}
-                  disabled={loading}
                   onClick={() => void startListening()}
                 >
                   <Mic className="h-4 w-4" />

@@ -125,6 +125,7 @@ export default function OrdersPage() {
                 <TableCell>
                   <div>{order.invoice_number}</div>
                   <div className="text-xs text-muted-foreground">
+                    {order.payment_method === "cod" ? "Cash on delivery · " : "Stripe · "}
                     {order.items?.map((item) => `${item.quantity}× ${item.name}`).join(", ")}
                   </div>
                 </TableCell>

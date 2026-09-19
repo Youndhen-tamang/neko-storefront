@@ -29,10 +29,15 @@ function formatDate(value: string) {
   }).format(date);
 }
 
-function paidLabel(status: string) {
-  if (status === "cancelled") return "Cancelled";
-  if (status === "delivered") return "Paid · Delivered";
-  if (status === "dispatched") return "Paid · Shipped";
+function paidLabel(order: Order) {
+  if (order.payment_method === "cod") {
+    if (order.status === "cancelled") return "Cancelled";
+    if (order.status === "delivered") return "COD · Delivered";
+    return "Cash on delivery";
+  }
+  if (order.status === "cancelled") return "Cancelled";
+  if (order.status === "delivered") return "Paid · Delivered";
+  if (order.status === "dispatched") return "Paid · Shipped";
   return "Paid";
 }
 
@@ -142,7 +147,7 @@ export async function downloadOrderReceipt(order: Order, branding: Branding | nu
   const meta = [
     ["Invoice", order.invoice_number],
     ["Date", formatDate(order.created_at)],
-    ["Status", paidLabel(order.status)],
+    ["Status", paidLabel(order)],
     ["Order", order.id.slice(0, 8).toUpperCase()],
   ];
   meta.forEach(([label, value]) => {
