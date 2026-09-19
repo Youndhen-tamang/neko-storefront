@@ -43,7 +43,7 @@ export default function TenantRequestPage() {
           provided.
         </p>
         <Button className="mt-8 w-full" asChild>
-          <Link href="/admin/login">Back to login</Link>
+          <Link href="/">Back to Homepage</Link>
         </Button>
       </div>
     );
@@ -158,9 +158,9 @@ export default function TenantRequestPage() {
           {loading ? "Sending request..." : "Submit request"}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
-          Already an admin?{" "}
-          <Link href="/admin/login" className="text-primary hover:underline">
-            Sign in
+         Problem with the form?{" "}
+          <Link href="mailto:support@theoneandonly.co" className="text-primary hover:underline">
+            Contact support
           </Link>
         </p>
       </form>
