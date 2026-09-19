@@ -12,14 +12,16 @@ import { downloadOrderReceipt } from "@/lib/receipt-pdf";
 import { offerReceipt } from "@/lib/speech";
 import { cn, money } from "@/lib/utils";
 
-function paymentSteps(cod: boolean) {
+function paymentSteps(method?: string | null) {
+  const cod = method === "cod";
+  const provider = method === "esewa" ? "eSewa" : "Stripe";
   return [
   {
     id: "paid",
     title: cod ? "Order placed" : "Payment received",
     body: cod
       ? "Pay cash when the order arrives. Your invoice is locked in and the atelier has the brief."
-      : "Stripe confirmed this order. Your invoice is locked in and the atelier has the brief.",
+      : `${provider} confirmed this order. Your invoice is locked in and the atelier has the brief.`,
     icon: Check,
   },
   {
@@ -328,7 +330,7 @@ export function OrderConfirmed({
             <h2 className="font-serif text-2xl">What happens next</h2>
             <p className="mt-1 text-sm text-muted-foreground">Open a step to see the plan for this order.</p>
             <ol className="mt-5 space-y-2">
-              {paymentSteps(order.payment_method === "cod").map((step, index) => {
+              {paymentSteps(order.payment_method).map((step, index) => {
                 const Icon = step.icon;
                 const done = index < active;
                 const current = index === active;

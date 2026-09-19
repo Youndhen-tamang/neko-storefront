@@ -31,3 +31,9 @@ export function asStringArray(value: unknown): string[] {
   }
   return [];
 }
+
+export function paymentMethodLabel(method?: string | null) {
+  if (method === "cod") return "Cash on delivery";
+  if (method === "esewa") return "eSewa";
+  return "Stripe";
+}
