@@ -7,6 +7,7 @@ import { cartCount, openCartDrawer } from "@/lib/cart";
 import { storeUrlForSlug } from "@/lib/tenant";
 import { CartDrawer } from "@/components/shop/cart-drawer";
 import { ChatWidget } from "@/components/chat/chat-widget";
+import { openStoreChat } from "@/lib/speech";
 import { ShopContext } from "@/components/shop/shop-context";
 import { cn } from "@/lib/utils";
 import { LandingTemplateId, normalizeLandingTemplate } from "@/lib/templates";
@@ -123,6 +124,16 @@ export function ShopShell({
       }}
     >
       <div className="min-h-screen">
+        <a
+          href="#store-assistant"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm"
+          onClick={(event) => {
+            event.preventDefault();
+            openStoreChat();
+          }}
+        >
+          Skip to store assistant
+        </a>
         <header
           className={cn(
             "sticky top-0 z-20 border-b backdrop-blur",
@@ -173,6 +184,9 @@ export function ShopShell({
             >
               <Link href="/">Shop</Link>
               <Link href="/try-on">Try on</Link>
+              <button type="button" onClick={() => openStoreChat()}>
+                Ask shop
+              </button>
               <button type="button" onClick={() => openCartDrawer()}>
                 Cart ({count})
               </button>

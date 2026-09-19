@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Download, Mail, Package, Printer, Sparkles, Truck } from "lucide-react";
 import { ConfettiBurst } from "@/components/shop/confetti-burst";
 import { useShop } from "@/components/shop/shop-context";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Order } from "@/lib/api";
 import { toast } from "sonner";
 import { downloadOrderReceipt } from "@/lib/receipt-pdf";
+import { offerReceipt } from "@/lib/speech";
 import { cn, money } from "@/lib/utils";
 
 const STEPS = [
@@ -102,9 +103,16 @@ export function OrderConfirmed({
   const [burst, setBurst] = useState(1);
   const [openStep, setOpenStep] = useState(1);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const receiptOffered = useRef(false);
 
   useEffect(() => {
     if (order) setOpenStep(currentStep(order.status));
+  }, [order]);
+
+  useEffect(() => {
+    if (!order || receiptOffered.current) return;
+    receiptOffered.current = true;
+    offerReceipt(order);
   }, [order]);
 
   const created = useMemo(() => (order ? new Date(order.created_at) : new Date()), [order]);
