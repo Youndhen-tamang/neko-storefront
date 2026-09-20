@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { LegalFooter } from "@/components/landing/legal-shell";
 import { api } from "@/lib/api";
 import { slugify } from "@/lib/slug";
 import { ArrowLeft } from "lucide-react";
@@ -36,22 +37,26 @@ export default function TenantRequestPage() {
 
   if (submitted) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-12">
-        <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Agency onboarding</p>
-        <h1 className="mt-3 text-3xl font-medium">Request received</h1>
-        <p className="mt-3 text-muted-foreground">
-          A super admin will review your details and create your tenant storefront. We will contact you at the email you
-          provided.
-        </p>
-        <Button className="mt-8 w-full" asChild>
-          <Link href="/">Back to Homepage</Link>
-        </Button>
+      <div className="flex min-h-screen flex-col">
+        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-12">
+          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Agency onboarding</p>
+          <h1 className="mt-3 text-3xl font-medium">Request received</h1>
+          <p className="mt-3 text-muted-foreground">
+            A super admin will review your details and create your tenant storefront. We will contact you at the email you
+            provided.
+          </p>
+          <Button className="mt-8 w-full" asChild>
+            <Link href="/">Back to Homepage</Link>
+          </Button>
+        </div>
+        <LegalFooter />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6 py-12">
+    <div className="flex min-h-screen flex-col">
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 py-12">
       <div className="my-4">
         <Link href="/">
         <Button variant="outline">
@@ -178,6 +183,8 @@ export default function TenantRequestPage() {
           </Link>
         </p>
       </form>
+    </div>
+    <LegalFooter />
     </div>
   );
 }

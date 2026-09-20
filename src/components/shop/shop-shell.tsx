@@ -124,7 +124,7 @@ export function ShopShell({
         template,
       }}
     >
-      <div className="min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <a
           href="#store-assistant"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm"
@@ -207,10 +207,60 @@ export function ShopShell({
             </nav>
           </div>
         </header>
-        <main className={flush ? "" : "mx-auto max-w-6xl px-6 py-10"}>{children}</main>
+        <main className={cn("flex-1", flush ? "" : "mx-auto max-w-6xl px-6 py-10")}>{children}</main>
+        <ShopFooter branding={branding} template={template} />
         <CartDrawer />
         <ChatWidget brandName={branding?.brandName || "Store"} />
       </div>
     </ShopContext.Provider>
+  );
+}
+
+function ShopFooter({
+  branding,
+  template,
+}: {
+  branding: Branding;
+  template: LandingTemplateId;
+}) {
+  const boutique = template === "boutique";
+  const hasContact = Boolean(branding.address || branding.phone || branding.email);
+
+  return (
+    <footer
+      className={cn(
+        "border-t",
+        boutique ? "border-neutral-800 bg-neutral-950 text-white" : "bg-background"
+      )}
+    >
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-8 text-sm sm:flex-row sm:items-start sm:justify-between">
+        <div className={boutique ? "text-white/70" : "text-muted-foreground"}>
+          <p className={cn("leading-none", boutique ? "font-serif text-xl text-white" : "text-foreground")}>
+            {branding.brandName}
+          </p>
+          {hasContact && (
+            <div className="mt-2 space-y-0.5">
+              {branding.address && <p>{branding.address}</p>}
+              {branding.phone && <p>{branding.phone}</p>}
+              {branding.email && <p>{branding.email}</p>}
+            </div>
+          )}
+        </div>
+        <nav
+          className={cn(
+            "flex flex-wrap items-center gap-x-5 gap-y-2",
+            boutique ? "text-white/70" : "text-muted-foreground"
+          )}
+          aria-label="Legal"
+        >
+          <Link href="/privacy" className={boutique ? "hover:text-white" : "hover:text-foreground"}>
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className={boutique ? "hover:text-white" : "hover:text-foreground"}>
+            Terms of Use
+          </Link>
+        </nav>
+      </div>
+    </footer>
   );
 }

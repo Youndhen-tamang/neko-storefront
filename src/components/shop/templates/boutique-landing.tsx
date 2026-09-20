@@ -163,19 +163,6 @@ export function BoutiqueLanding({
           </>
         )}
       </section>
-
-      {(branding?.address || branding?.phone) && (
-        <footer className="border-t bg-neutral-950 px-6 py-12 text-white">
-          <div className="mx-auto flex max-w-6xl flex-col gap-2 text-sm text-white/70 sm:flex-row sm:justify-between">
-            <p className="font-serif text-xl text-white">{branding.brandName}</p>
-            <div className="space-y-1">
-              {branding.address && <p>{branding.address}</p>}
-              {branding.phone && <p>{branding.phone}</p>}
-              {branding.email && <p>{branding.email}</p>}
-            </div>
-          </div>
-        </footer>
-      )}
     </div>
   );
 }
