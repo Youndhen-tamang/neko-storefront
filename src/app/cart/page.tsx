@@ -17,10 +17,10 @@ import { money } from "@/lib/utils";
 
 export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [shippingAddress, setShippingAddress] = useState("");
+  const [customerName, setCustomerName] = useState("Saurav Pandey");
+  const [customerEmail, setCustomerEmail] = useState("sauravpandey0325@gmail.com");
+  const [customerPhone, setCustomerPhone] = useState("9869751266");
+  const [shippingAddress, setShippingAddress] = useState("Koteshwor, Kathmandu, Nepal");
   const [loading, setLoading] = useState<"stripe" | "cod" | "esewa" | undefined>(undefined);
 
   function refresh() {

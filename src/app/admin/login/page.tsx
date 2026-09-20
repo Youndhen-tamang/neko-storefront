@@ -16,8 +16,8 @@ export default function AdminLoginPage() {
   const [ready, setReady] = useState(false);
   const [hostSlug, setHostSlug] = useState("");
   const [agencySlug, setSlug] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("iva@lumina.test");
+  const [password, setPassword] = useState("password123");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
